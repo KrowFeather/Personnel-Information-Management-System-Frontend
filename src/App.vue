@@ -1,7 +1,14 @@
-<script setup lang="ts"></script>
-
 <template>
-  <el-button type="primary">Hello World</el-button>
+  <div class="app-wrapper">
+    <router-view></router-view>
+  </div>
 </template>
 
-<style scoped></style>
+<script setup lang="ts"></script>
+
+<style scoped>
+.app-wrapper {
+  height: 100%;
+  overflow: hidden;
+}
+</style>
