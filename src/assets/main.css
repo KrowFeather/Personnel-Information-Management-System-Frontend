@@ -1,23 +1,33 @@
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  overflow: hidden;
-}
-
-#app {
-  margin: 0;
-  padding: 0;
-  height: 100vh;
-  overflow: hidden;
-}
-
-h1,h2,h3,h4,h5,h6,p {
+html, body, #app{
   margin: 0;
   padding: 0;
 }
 
-div{
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
   margin: 0;
   padding: 0;
+}
+
+div {
+  margin: 0;
+  padding: 0;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(17, 106, 241, 0.6) transparent; /* Firefox：thumb track */
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
 }

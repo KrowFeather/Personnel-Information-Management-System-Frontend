@@ -1,9 +1,9 @@
 <template>
   <div class="w-full h-full">
-    <div class="h-4em w-full flex items-center bg-[#F9FAFB] shadow-md">
+    <div class="h-4em w-full flex items-center bg-[#F9FAFB] shadow-md z-100 fixed top-0">
       <div class="flex justify-between items-center h-full w-full nav">
-        <h1 class="text-2xl font-bold m-l-1em text-white">
-          Personnel Information Management System
+        <h1 class="text-2xl font-bold m-l-1em text-black">
+          Fake Discord
         </h1>
         <div class="w-30% flex justify-end items-center m-r-1em">
           <el-dropdown>
@@ -20,7 +20,7 @@
         </div>
       </div>
     </div>
-    <div class="flex h-[calc(100vh-4em)] overflow-hidden relative">
+    <div class="flex h-[calc(100vh-4em)] overflow-hidden relative m-t-4em">
       <div class="w-13% h-full shadow-[3px_3px_5px_rgba(0,0,0,0.1)]">
         <el-menu default-active="1" class="h-100% sci-menu" @open="handleOpen" @close="handleClose">
           <el-menu-item index="1" @click="toDashBoard()">
@@ -37,19 +37,13 @@
           </el-menu-item>
           <el-menu-item index="3">
             <el-icon>
-              <Document />
-            </el-icon>
-            <span>Blogs</span>
-          </el-menu-item>
-          <el-menu-item index="4">
-            <el-icon>
               <Setting />
             </el-icon>
             <span>User Setting</span>
           </el-menu-item>
         </el-menu>
       </div>
-      <div class="flex-1 h-full overflow-y-hidden">
+      <div class="flex-1 h-full overflow-y-auto b-1px b-solid b-gray-400 rounded-3px">
         <router-view></router-view>
       </div>
       <div class="absolute right-5 bottom-5 w-4em h-4em">
@@ -63,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { Menu as IconMenu, Compass, Document, Setting } from '@element-plus/icons-vue'
+import { Menu as IconMenu, Compass, Setting } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { onMounted, ref } from 'vue'
 import AgentInvoker from '@/components/AgentInvoker.vue'
@@ -123,6 +117,8 @@ onMounted(() => {
 
 .nav {
   /* background-image: linear-gradient(225deg, #22E1FF 0%, #1D8FE1 48%, #2e23fa 100%); */
-  background-image: linear-gradient(to right bottom, #1c47e2, #5d5fe9, #8379f1, #a393f8, #bfafff);
+  background-image: linear-gradient(to top left, white,white, #ddffff);
+  /* background-color: #fcfcff; */
+
 }
 </style>
