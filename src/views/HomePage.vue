@@ -12,7 +12,6 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item>User Settings</el-dropdown-item>
                 <el-dropdown-item>Log out</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -21,8 +20,8 @@
       </div>
     </div>
     <div class="flex h-[calc(100vh-4em)] overflow-hidden relative m-t-4em">
-      <div class="w-13% h-full shadow-[3px_3px_5px_rgba(0,0,0,0.1)]">
-        <el-menu default-active="1" class="h-100% sci-menu" @open="handleOpen" @close="handleClose">
+      <div class="w-13% h-full">
+        <el-menu default-active="2" class="h-100% sci-menu" @open="handleOpen" @close="handleClose">
           <el-menu-item index="1" @click="toDashBoard()">
             <el-icon>
               <IconMenu />
@@ -35,7 +34,7 @@
             </el-icon>
             <span>Organizations</span>
           </el-menu-item>
-          <el-menu-item index="3">
+          <el-menu-item index="3" @click="toUserSettingPage()">
             <el-icon>
               <Setting />
             </el-icon>
@@ -43,7 +42,7 @@
           </el-menu-item>
         </el-menu>
       </div>
-      <div class="flex-1 h-full overflow-y-auto b-1px b-solid b-gray-400 rounded-3px">
+      <div class="flex-1 h-full overflow-y-auto b-1.5px b-solid b-gray-300 rounded-3px">
         <router-view></router-view>
       </div>
       <div class="absolute right-5 bottom-5 w-4em h-4em">
@@ -81,8 +80,12 @@ const toOrganizationPage = () => {
   router.push('/home/organization')
 }
 
+const toUserSettingPage = () => {
+  router.push('/home/user')
+}
+
 onMounted(() => {
-  router.push('/home/dashboard')
+  router.push('/home/organization')
 })
 </script>
 
