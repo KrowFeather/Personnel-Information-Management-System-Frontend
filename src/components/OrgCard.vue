@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex rounded-md items-center justify-between shadow-md h-21em flex-col hover:shadow-[#949af9] transition-all duration-300">
+  <div class="w-full flex rounded-md items-center justify-between shadow-md h-21em flex-col hover:shadow-[#c3daef] transition-all duration-300">
     <div class="h-55% w-full">
       <img :src="org.banner" alt="" class="w-full h-full object-fill rounded-md">
     </div>
@@ -21,7 +21,7 @@
         </p>
       </div>
       <div>
-        <el-button type="primary" size="small" class="rounded-full px-4">
+        <el-button type="primary" size="small">
           Join
         </el-button>
       </div>

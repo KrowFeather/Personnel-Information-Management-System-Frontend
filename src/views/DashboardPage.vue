@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full z-[10]">
+  <div class="w-full h-full z-[10] overflow-hidden">
     <transition name="el-fade-in-linear">
       <div v-show="show">
         <div class="w-full h-full flex overflow-y-hidden">

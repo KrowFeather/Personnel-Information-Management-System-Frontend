@@ -4,6 +4,7 @@ import OrganizationPage from "@/views/OrganizationPage.vue";
 import DashBoard from "@/views/DashboardPage.vue";
 import UserPage from "@/views/UserPage.vue";
 import BlogPage from "@/views/BlogPage.vue";
+import AdminPage from "@/views/AdminPage.vue";
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
@@ -30,10 +31,6 @@ const router = createRouter({
               path: '/home/dashboard/blog/:org',
               name: 'Blog',
               component: BlogPage
-            },
-            {
-              path:'/home/dashboard',
-              redirect: '/home/dashboard/blog/1'
             }
           ]
         },
@@ -47,6 +44,11 @@ const router = createRouter({
     {
       path: "/",
       redirect: "/home",
+    },
+    {
+      path: "/admin",
+      name: "Admin",
+      component: AdminPage,
     }
   ],
 });

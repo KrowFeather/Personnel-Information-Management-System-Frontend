@@ -24,7 +24,10 @@
                 <OrgCard :org="org"></OrgCard>
               </el-tab-pane>
               <el-tab-pane label="Created" name="second">Created</el-tab-pane>
-              <el-tab-pane label="Settings" name="third">Settings</el-tab-pane>
+              <el-tab-pane label="Settings" name="third">
+                <el-button>Change Password</el-button>
+                <el-button>Logout</el-button>
+              </el-tab-pane>
             </el-tabs>
           </div>
         </div>
