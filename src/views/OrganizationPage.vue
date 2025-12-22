@@ -1,12 +1,12 @@
 <template>
   <div class="w-full h-full">
     <transition name="el-fade-in-linear">
-      <div v-show="show" class="h-100% w-full flex flex-col">
-        <div class="w-full h-full banner">
+      <div v-show="show" class="w-full flex flex-col">
+        <div class="w-full h-22em banner">
           <div class="m-2em flex items-center h-15em">
             <div>
-              <h1 class="text-3em m-b-0.5em">JOIN YOUR ORGANIZATION!</h1>
-              <h3>Various organizations are waiting for you</h3>
+              <h1 class="text-3em m-b-0.5em text-white">JOIN YOUR ORGANIZATION!</h1>
+              <h3 class="text-slate-200">Various organizations are waiting for you</h3>
             </div>
           </div>
           <div class="h-3em w-full flex items-center justify-center">
@@ -92,9 +92,43 @@ const handleSearch = () => {
 
 <style scoped>
 .banner{
-  background-image: linear-gradient(to bottom left, white,#dbcaff,#c9b0ff,rgb(203, 166, 255), #e5d9ff);
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(135deg, #0f172a 0%, #111827 12%, #1e293b 35%, #1d4ed8 70%, #60a5fa 100%);
   background-size: 160% 160%;
   animation: org-banner-flow 22s ease-in-out infinite;
+  color: #e5e7eb;
+}
+
+.banner > * {
+  position: relative;
+  z-index: 1;
+}
+
+.banner::before,
+.banner::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(18px);
+  opacity: 0.7;
+  background: radial-gradient(circle, rgba(129, 140, 248, 0.95), transparent 55%);
+  animation: org-bubble 18s ease-in-out infinite;
+}
+
+.banner::before {
+  width: 170px;
+  height: 170px;
+  top: -30px;
+  left: -40px;
+}
+
+.banner::after {
+  width: 260px;
+  height: 260px;
+  bottom: -60px;
+  right: -40px;
+  animation-delay: 5s;
 }
 
 @keyframes org-banner-flow {
@@ -106,6 +140,18 @@ const handleSearch = () => {
   }
   100% {
     background-position: 0% 0%;
+  }
+}
+
+@keyframes org-bubble {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(18px, -16px, 0) scale(1.06);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 </style>

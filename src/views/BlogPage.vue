@@ -31,6 +31,9 @@
       </div>
       <div class="h-full w-full">
         <h3 class="text-sm font-medium text-slate-700 mb-2">Recommend For You</h3>
+        <div class="w-full rounded-lg bg-slate-50 border border-slate-200 p-2 mb-3">
+          <KnowledgeGraph :nodes="graphNodes" :links="graphLinks" />
+        </div>
         <div class="w-full space-y-2">
           <OrgCard v-for="(item,idx) in orgs" :key="idx" :org="item" />
         </div>
@@ -44,12 +47,13 @@ import { useRoute } from 'vue-router'
 import { computed, ref } from 'vue'
 import BlogCard from '@/components/BlogCard.vue';
 import OrgCard from '@/components/OrgCard.vue';
+import KnowledgeGraph from '@/components/KnowledgeGraph.vue';
 
 const route = useRoute()
 const orgName = computed(() => route.params.org ?? 'unknown')
 
 const orgs = ref([
-    {
+  {
     name: 'Google Research',
     description: 'Google Research is a artificial intelligence company.',
     logo: 'https://www.blog.google/static/blogv2/images/google-200x200.png',
@@ -62,6 +66,41 @@ const orgs = ref([
     banner: 'https://img.lancdn.com/landian/2024/09/105878.png'
   }
 ])
+
+const graphNodes = computed(() => {
+  const centerName = typeof orgName.value === 'string' ? orgName.value : 'Org'
+  const centerId = `org:${centerName}`
+  const baseNodes = [
+    { id: centerId, name: centerName, category: 'Org', symbolSize: 42 },
+    { id: 'members', name: 'Members', category: 'Entity' },
+    { id: 'projects', name: 'Projects', category: 'Entity' },
+    { id: 'roles', name: 'Roles', category: 'Entity' },
+    { id: 'docs', name: 'Docs', category: 'Entity' },
+  ]
+  const orgNodes = orgs.value.map((o) => ({
+    id: `org:${o.name}`,
+    name: o.name,
+    category: 'Related Org',
+  }))
+  return [...baseNodes, ...orgNodes]
+})
+
+const graphLinks = computed(() => {
+  const centerName = typeof orgName.value === 'string' ? orgName.value : 'Org'
+  const centerId = `org:${centerName}`
+  const baseLinks = [
+    { source: centerId, target: 'members', label: 'has' },
+    { source: centerId, target: 'projects', label: 'owns' },
+    { source: centerId, target: 'roles', label: 'defines' },
+    { source: centerId, target: 'docs', label: 'references' },
+  ]
+  const orgLinks = orgs.value.map((o) => ({
+    source: centerId,
+    target: `org:${o.name}`,
+    label: 'related',
+  }))
+  return [...baseLinks, ...orgLinks]
+})
 </script>
 
 <style scoped>
