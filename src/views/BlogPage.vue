@@ -1,24 +1,38 @@
 <template>
-  <div class="flex h-[calc(100vh-4em)]">
-    <div class="h-[calc(100vh-4em)] flex-1 bg-white text-black overflow-y-auto p-l-3em p-r-3em p-t-2em box-border">
-      <BlogCard></BlogCard>
-      <BlogCard></BlogCard>
-      <BlogCard></BlogCard>
-    </div>
-    <div class="w-33% b-l-1.5px b-t-0 b-r-0 b-b-0 b-solid b-gray-300 p-1em box-border overflow-y-auto rightbar">
-      <div class="m-b-1em">
-         <h2>{{ orgName }}</h2>
+  <div class="flex w-full h-[calc(100vh-4em)] blog-layout overflow-hidden">
+    <div class="h-full flex-1 bg-white text-slate-900 overflow-y-auto px-4 py-3 box-border space-y-4">
+      <div class="flex items-center justify-between mb-2">
+        <div>
+          <p class="text-xs uppercase tracking-wide text-slate-400">Organization</p>
+          <h2 class="text-lg font-semibold text-slate-800">{{ orgName }}</h2>
+        </div>
+        <span class="text-xs text-slate-400">Latest announcements</span>
       </div>
-      <div>
-        <h3>Active Members</h3>
-        <div class="flex flex-wrap">
-          <img v-for="idx in 15" src="https://picsum.photos/200/300" alt="" :key="idx" class="h-3em w-3em">
+      <BlogCard />
+      <BlogCard />
+      <BlogCard />
+    </div>
+    <div class="h-full w-33% b-l-1.5px b-t-0 b-r-0 b-b-0 b-solid b-gray-200 px-4 py-3 box-border overflow-y-auto rightbar bg-white/90">
+      <div class="mb-4">
+        <h2 class="text-base font-semibold text-slate-800 mb-1">{{ orgName }}</h2>
+        <p class="text-xs text-slate-400">Overview & members</p>
+      </div>
+      <div class="mb-4">
+        <h3 class="text-sm font-medium text-slate-700 mb-2">Active Members</h3>
+        <div class="flex flex-wrap gap-2">
+          <img
+            v-for="idx in 15"
+            src="https://picsum.photos/200/300"
+            alt=""
+            :key="idx"
+            class="h-3em w-3em rounded-full object-cover border border-white shadow-sm"
+          >
         </div>
       </div>
       <div class="h-full w-full">
-        <h3 class="p-b-0.5em">Recommend For You</h3>
-        <div class="w-full">
-          <OrgCard v-for="(item,idx) in orgs" :key="idx" :org="item"></OrgCard>
+        <h3 class="text-sm font-medium text-slate-700 mb-2">Recommend For You</h3>
+        <div class="w-full space-y-2">
+          <OrgCard v-for="(item,idx) in orgs" :key="idx" :org="item" />
         </div>
       </div>
     </div>
@@ -51,6 +65,11 @@ const orgs = ref([
 </script>
 
 <style scoped>
+.blog-layout {
+  background: radial-gradient(circle at 0% 0%, #e0f2fe 0, transparent 28%),
+    radial-gradient(circle at 100% 100%, #e5e7ff 0, transparent 30%);
+}
+
 .rightbar::-webkit-scrollbar{
   display: none;
 }
@@ -58,5 +77,4 @@ const orgs = ref([
 .rightbar{
   scrollbar-width: none;
 }
-
 </style>

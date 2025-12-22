@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 import Home from "../views/HomePage.vue";
+import LoginPage from "../views/LoginPage.vue";
 import OrganizationPage from "@/views/OrganizationPage.vue";
 import DashBoard from "@/views/DashboardPage.vue";
 import UserPage from "@/views/UserPage.vue";
@@ -8,6 +9,11 @@ import AdminPage from "@/views/AdminPage.vue";
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
+    {
+      path: "/login",
+      name: "Login",
+      component: LoginPage,
+    },
     {
       path: "/home",
       name: "Home",
@@ -43,7 +49,7 @@ const router = createRouter({
     },
     {
       path: "/",
-      redirect: "/home",
+      redirect: "/login",
     },
     {
       path: "/admin",

@@ -28,7 +28,7 @@
           <h3>Popular Organizations</h3>
         </div>
         <div class="w-full flex justify-around flex-wrap">
-          <div v-for="org in orgs" :key="org.name" class="w-32% m-b-1.5em">
+          <div v-for="org in orgs" :key="org.name" class="w-30% m-b-1.5em">
             <OrgCard :org="org"></OrgCard>
           </div>
         </div>
@@ -93,5 +93,19 @@ const handleSearch = () => {
 <style scoped>
 .banner{
   background-image: linear-gradient(to bottom left, white,#dbcaff,#c9b0ff,rgb(203, 166, 255), #e5d9ff);
+  background-size: 160% 160%;
+  animation: org-banner-flow 22s ease-in-out infinite;
+}
+
+@keyframes org-banner-flow {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
 }
 </style>

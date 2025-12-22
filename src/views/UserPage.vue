@@ -56,5 +56,19 @@ const activeName = ref("first");
 <style scoped>
 .surface {
   background-image: linear-gradient(to bottom left, white, #dbcaff, #c9b0ff, rgb(203, 166, 255), #e5d9ff);
+  background-size: 160% 160%;
+  animation: user-banner-flow 24s ease-in-out infinite;
+}
+
+@keyframes user-banner-flow {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
 }
 </style>

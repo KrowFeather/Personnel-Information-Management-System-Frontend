@@ -1,17 +1,24 @@
 <template>
-  <div class="w-full h-full z-[10] overflow-hidden">
+  <div class="w-full h-full z-[10] overflow-hidden dashboard-shell">
     <transition name="el-fade-in-linear">
       <div v-show="show">
-        <div class="w-full h-full flex overflow-y-hidden">
-          <div class="w-20% h-[calc(100vh-4em)] b-r-1.5px b-t-0 b-l-0 b-b-0 b-solid b-gray-300">
-            <el-menu class="sci-menu" :default-active="0">
-              <el-menu-item v-for="(item, idx) in orgs" :index="idx" @click="toOrgBlog(item.name)" :key="idx">
-                <img :src="item.logo" alt="" class="w-3.2em h-3.2em rounded-xl">
-                <span class="m-l-1em">{{ item.name }}</span>
+        <div class="w-full h-full flex overflow-hidden">
+          <div class="w-20% h-full dashboard-menu">
+            <el-menu class="sci-menu h-full" :default-active="'0'">
+              <el-menu-item
+                v-for="(item, idx) in orgs"
+                :index="String(idx)"
+                @click="toOrgBlog(item.name)"
+                :key="idx"
+              >
+                <img :src="item.logo" alt="" class="w-3.2em h-3.2em rounded-lg shadow-sm object-cover">
+                <span class="flex-1 m-l-1em font-medium text-slate-800 truncate">
+                  {{ item.name }}
+                </span>
               </el-menu-item>
             </el-menu>
           </div>
-          <div class="h-full w-full">
+          <div class="h-full w-full dashboard-content">
             <router-view></router-view>
           </div>
         </div>
@@ -86,10 +93,33 @@ const toOrgBlog = (orgSlug: string) => {
 </script>
 
 <style scoped>
+.dashboard-shell {
+  background: radial-gradient(circle at 0% 0%, #e0f2fe 0, transparent 26%),
+    radial-gradient(circle at 100% 100%, #e5e7ff 0, transparent 28%),
+    linear-gradient(135deg, #f9fafb 0%, #eef2ff 100%);
+}
+
+.dashboard-menu {
+  background-color: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+}
+
+.dashboard-content {
+  padding: 0.75rem 0.75rem 0.5rem;
+}
+
+.sci-menu {
+  border-right: none;
+  padding-top: 0.75rem;
+}
+
+.sci-menu :deep(.el-menu-item) {
+  margin: 4px 8px;
+  border-radius: 999px;
+}
+
 .sci-menu :deep(.el-menu-item.is-active) {
-  /* animation: glow-pulse 2s ease-in-out infinite; */
-  background-color: #E0E7FF;
-  /* background-image: linear-gradient(-225deg, #22E1FF 0%, #1D8FE1 48%, #625EB1 100%); */
-  color: #1c47e2;
+  background-image: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  color: #1d4ed8;
 }
 </style>
