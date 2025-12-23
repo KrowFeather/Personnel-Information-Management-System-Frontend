@@ -8,9 +8,9 @@
         <div class="w-30% flex justify-end items-center m-r-1em">
           <el-dropdown>
             <span class="el-dropdown-link cursor-pointer">
-              <img 
-                :src="userAvatar" 
-                :alt="userName || 'User'" 
+              <img
+                :src="userAvatar"
+                :alt="userName || 'User'"
                 class="w-3em h-3em rounded-full mr-1em border border-white shadow-sm object-cover"
                 @error="handleAvatarError"
               />
@@ -30,7 +30,7 @@
     </div>
     <div class="flex h-[calc(100vh-4em)] overflow-hidden relative m-t-4em px-3 gap-3">
       <div class="w-13% h-full">
-        <el-menu default-active="2" class="h-100% sci-menu" @open="handleOpen" @close="handleClose">
+        <el-menu :default-active="activeMenuIndex" class="h-100% sci-menu" @open="handleOpen" @close="handleClose">
           <el-menu-item index="1" @click="toDashBoard()">
             <el-icon>
               <IconMenu />
@@ -72,17 +72,28 @@
 
 <script setup lang="ts">
 import { Menu as IconMenu, Compass, Setting, DocumentChecked } from '@element-plus/icons-vue'
-import { useRouter } from 'vue-router'
-import { onMounted, ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { onMounted, ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 import { baseUrl } from '@/net'
 import { TeamApi } from '@/api'
 import AgentInvoker from '@/components/AgentInvoker.vue'
 const router = useRouter()
+const route = useRoute()
 
 const showAgent = ref(false)
 const hasManagedTeams = ref(false)
+
+// 根据当前路由确定激活的菜单项
+const activeMenuIndex = computed(() => {
+  const path = route.path
+  if (path.startsWith('/home/dashboard')) return '1'
+  if (path.startsWith('/home/organization')) return '2'
+  if (path.startsWith('/home/user')) return '3'
+  if (path.startsWith('/home/team-admin')) return '4'
+  return '2' // 默认
+})
 
 // 获取用户信息
 const getUserInfo = () => {
@@ -199,9 +210,17 @@ const checkManagedTeams = async () => {
 }
 
 onMounted(() => {
-  router.push('/home/organization')
+  // 如果当前不在 /home 的子路由，才跳转到默认页面
+  if (!route.path.startsWith('/home/')) {
+    router.push('/home/organization')
+  }
   checkManagedTeams()
 })
+
+// 监听路由变化，确保菜单状态同步
+watch(() => route.path, () => {
+  // 路由变化时，菜单会自动通过 activeMenuIndex 更新
+}, { immediate: true })
 </script>
 
 <style scoped>

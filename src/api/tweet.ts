@@ -11,9 +11,11 @@ export const sendTweet = (payload: TweetSendPayload) => {
   return api.post<{ tweet: unknown }>('/tweet/send', payload)
 }
 
-export const deleteTweet = (tweetId: number) => {
+export const deleteTweet = (tweetId: number | string) => {
+  const tweetIdStr = String(tweetId)
+  console.log('Calling deleteTweet API with tweetId:', tweetIdStr)
   return api.post<{ tweet: unknown }>('/tweet/delete', null, {
-    params: { tweetId },
+    params: { tweetId: tweetIdStr },
   })
 }
 

@@ -267,14 +267,20 @@ const doLogin = () => {
 
     AuthApi.login(payload)
       .then((resp) => {
-        const data = resp.data
+        const data = resp.data as { token?: string; user?: { admin?: number } }
         const token = data.token
         const user = data.user
 
         saveAuth(token, user)
 
         ElMessage.success('Login successful')
-        router.push('/home')
+
+        // 根据用户角色跳转：管理员跳转到 /admin，普通用户跳转到 /home
+        if (user && user.admin === 1) {
+          router.push('/admin')
+        } else {
+          router.push('/home')
+        }
       })
       .catch((err: unknown) => {
         console.error(err)
