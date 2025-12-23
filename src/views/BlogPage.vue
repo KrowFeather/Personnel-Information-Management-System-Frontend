@@ -8,9 +8,9 @@
         </div>
         <span class="text-xs text-slate-400">Latest announcements</span>
       </div>
-      <BlogCard />
-      <BlogCard />
-      <BlogCard />
+      <div v-if="loading" class="text-center py-8 text-slate-400">Loading...</div>
+      <div v-else-if="tweets.length === 0" class="text-center py-8 text-slate-400">No tweets yet</div>
+      <BlogCard v-for="tweet in tweets" :key="tweet.id" :tweet="tweet" />
     </div>
     <div class="h-full w-33% b-l-1.5px b-t-0 b-r-0 b-b-0 b-solid b-gray-200 px-4 py-3 box-border overflow-y-auto rightbar bg-white/90">
       <div class="mb-4">
@@ -21,10 +21,10 @@
         <h3 class="text-sm font-medium text-slate-700 mb-2">Active Members</h3>
         <div class="flex flex-wrap gap-2">
           <img
-            v-for="idx in 15"
-            src="https://picsum.photos/200/300"
-            alt=""
-            :key="idx"
+            v-for="member in members.slice(0, 15)"
+            :key="member.id"
+            :src="member.avatar || 'https://picsum.photos/200/300'"
+            :alt="member.name || 'Member'"
             class="h-3em w-3em rounded-full object-cover border border-white shadow-sm"
           >
         </div>
@@ -44,28 +44,104 @@
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import BlogCard from '@/components/BlogCard.vue';
 import OrgCard from '@/components/OrgCard.vue';
 import KnowledgeGraph from '@/components/KnowledgeGraph.vue';
+import { TeamApi, TweetApi } from '@/api'
 
 const route = useRoute()
 const orgName = computed(() => route.params.org ?? 'unknown')
+const currentTeamId = ref<number | null>(null)
 
-const orgs = ref([
-  {
-    name: 'Google Research',
-    description: 'Google Research is a artificial intelligence company.',
-    logo: 'https://www.blog.google/static/blogv2/images/google-200x200.png',
-    banner: 'https://research.google/static/images/blog/google-ai-meta.png'
-  },
-  {
-    name: 'OpenAI',
-    description: 'OpenAI is a artificial intelligence research laboratory.',
-    logo: 'https://logos-world.net/wp-content/uploads/2024/08/OpenAI-Logo.png',
-    banner: 'https://img.lancdn.com/landian/2024/09/105878.png'
+interface Org {
+  id?: number
+  name: string
+  description?: string
+  logo?: string
+  banner?: string
+}
+
+interface Tweet {
+  id: number
+  teamId: number
+  senderId: number
+  title: string
+  content: string
+  images: string[]
+  createTime: string
+}
+
+interface TeamMember {
+  id: number
+  memberId: number
+  teamId: number
+  position: string
+  avatar?: string
+  name?: string
+}
+
+const orgs = ref<Org[]>([])
+const tweets = ref<Tweet[]>([])
+const members = ref<TeamMember[]>([])
+const loading = ref(false)
+
+const fetchTeamInfo = async () => {
+  if (!orgName.value || orgName.value === 'unknown') return
+  
+  loading.value = true
+  try {
+    const teamListResp = await TeamApi.getTeamList(1)
+    const teamList = (teamListResp.data as { teamList?: Org[] }).teamList || []
+    const currentTeam = teamList.find(t => t.name === orgName.value)
+    
+    if (!currentTeam || !currentTeam.id) {
+      ElMessage.warning('Organization not found')
+      return
+    }
+    
+    currentTeamId.value = currentTeam.id
+    
+    // 获取推文列表
+    try {
+      const tweetResp = await TweetApi.searchTweet(undefined, currentTeam.id)
+      tweets.value = (tweetResp.data as { tweetList?: Tweet[] }).tweetList || []
+    } catch (e) {
+      console.error('Failed to load tweets', e)
+      tweets.value = []
+    }
+    
+    // 获取团队成员（如果用户不是成员会返回 403，这是正常的）
+    try {
+      const membersResp = await TeamApi.getTeamMembers(currentTeam.id)
+      members.value = (membersResp.data as { teamMemberList?: TeamMember[] }).teamMemberList || []
+    } catch (e: unknown) {
+      // 403 表示用户不是团队成员，这是正常的，不显示错误
+      const err = e as { response?: { status?: number } }
+      if (err?.response?.status !== 403) {
+        console.error('Failed to load members', e)
+      }
+      members.value = []
+    }
+    
+    // 获取推荐组织（排除当前组织）
+    orgs.value = teamList.filter(t => t.id !== currentTeam.id).slice(0, 2)
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('Failed to load data')
+  } finally {
+    loading.value = false
   }
-])
+}
+
+onMounted(() => {
+  fetchTeamInfo()
+})
+
+watch(orgName, () => {
+  fetchTeamInfo()
+})
 
 const graphNodes = computed(() => {
   const centerName = typeof orgName.value === 'string' ? orgName.value : 'Org'

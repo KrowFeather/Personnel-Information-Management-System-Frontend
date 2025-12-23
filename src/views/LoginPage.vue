@@ -157,8 +157,8 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { AxiosError } from 'axios'
-import { api, saveAuth, clearAuth } from '@/net'
+import { saveAuth, clearAuth } from '@/net'
+import { AuthApi } from '@/api'
 const router = useRouter()
 
 const activeTab = ref<'login' | 'register'>('login')
@@ -221,7 +221,7 @@ const captchaSrc = computed(() => {
 
 const refreshCaptcha = async () => {
   try {
-    const resp = await api.get('/auth/get-image-captcha')
+    const resp = await AuthApi.getImageCaptcha()
     captchaUuid.value = resp.data.uuid
     captchaImg.value = resp.data.base64Img
   } catch (e) {
@@ -265,9 +265,9 @@ const doLogin = () => {
       code: loginForm.code,
     }
 
-    api.post('/auth/login', payload)
+    AuthApi.login(payload)
       .then((resp) => {
-        const data: { token?: string; user?: unknown; error?: string; message?: string } = resp.data || {}
+        const data = resp.data
         const token = data.token
         const user = data.user
 
@@ -276,10 +276,9 @@ const doLogin = () => {
         ElMessage.success('Login successful')
         router.push('/home')
       })
-      .catch((err: AxiosError<{ error?: string; message?: string }>) => {
+      .catch((err: unknown) => {
         console.error(err)
-        const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Login failed'
-        ElMessage.error(msg)
+        ElMessage.error('Login failed')
         // 刷新验证码，防止重复使用
         refreshCaptcha()
       })
@@ -296,14 +295,11 @@ const sendEmailCaptcha = async () => {
   }
   emailLoading.value = true
   try {
-    await api.get('/auth/get-email-captcha', {
-      params: { email: registerForm.email },
-    })
+    await AuthApi.getEmailCaptcha(registerForm.email)
     ElMessage.success('Verification code sent to email')
   } catch (err: unknown) {
-    const axiosErr = err as AxiosError<{ error?: string; message?: string }>
-    const msg = axiosErr?.response?.data?.error || axiosErr?.response?.data?.message || axiosErr?.message || 'Send failed'
-    ElMessage.error(msg)
+    console.error(err)
+    ElMessage.error('Send failed')
   } finally {
     emailLoading.value = false
   }
@@ -320,23 +316,22 @@ const doRegister = () => {
     }
 
     const payload = {
-      useranme: registerForm.username, // 后端 DTO 拼写为 useranme
+      username: registerForm.username,
       password: registerForm.password,
       email: registerForm.email,
       code: registerForm.emailCode,
     }
 
-    api.post('/auth/register', payload)
+    AuthApi.register(payload)
       .then(() => {
         ElMessage.success('Register successful, please login')
         activeTab.value = 'login'
         clearAuth()
         refreshCaptcha()
       })
-      .catch((err: AxiosError<{ error?: string; message?: string }>) => {
+      .catch((err: unknown) => {
         console.error(err)
-        const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Register failed'
-        ElMessage.error(msg)
+        ElMessage.error('Register failed')
       })
       .finally(() => {
         loading.value = false

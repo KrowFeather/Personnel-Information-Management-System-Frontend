@@ -21,8 +21,14 @@
         </p>
       </div>
       <div>
-        <el-button type="primary" size="small">
-          Join
+        <el-button 
+          type="primary" 
+          size="small"
+          :loading="joining"
+          :disabled="isJoined"
+          @click="handleJoin"
+        >
+          {{ isJoined ? 'Joined' : 'Join' }}
         </el-button>
       </div>
     </div>
@@ -30,7 +36,12 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import { TeamApi } from '@/api'
+
 interface Org {
+  id?: number
   name: string
   description?: string
   logo?: string
@@ -39,9 +50,44 @@ interface Org {
 
 const props = defineProps<{
   org: Org
+  isJoined?: boolean
 }>()
 
 const org = props.org
+const joining = ref(false)
+const isJoined = ref(props.isJoined || false)
+
+watch(() => props.isJoined, (newVal) => {
+  isJoined.value = newVal || false
+})
+
+const emit = defineEmits<{
+  joined: [teamId: number]
+}>()
+
+const handleJoin = async () => {
+  if (!org.id) {
+    ElMessage.warning('Organization ID is missing')
+    return
+  }
+  
+  if (isJoined.value) {
+    return
+  }
+  
+  joining.value = true
+  try {
+    await TeamApi.applyJoinTeam(org.id)
+    ElMessage.success('Join request submitted successfully')
+    isJoined.value = true
+    emit('joined', org.id)
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('Failed to submit join request')
+  } finally {
+    joining.value = false
+  }
+}
 </script>
 
 <style scoped></style>

@@ -5,6 +5,12 @@
         <div class="w-full h-full flex overflow-hidden">
           <div class="w-20% h-full dashboard-menu">
             <el-menu class="sci-menu h-full" :default-active="'0'">
+              <div v-if="loading" class="p-4 text-center text-slate-400 text-sm">
+                Loading...
+              </div>
+              <div v-else-if="orgs.length === 0" class="p-4 text-center text-slate-400 text-sm">
+                No organizations
+              </div>
               <el-menu-item
                 v-for="(item, idx) in orgs"
                 :index="String(idx)"
@@ -28,64 +34,54 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted} from "vue";
-import type { Ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { TeamApi } from '@/api'
 
 const show = ref(false);
 const router = useRouter()
 
-onMounted(() => {
-  show.value = true;
-  console.log('orgs', orgs.value)
-  router.push({ name: 'Blog', params: { org: orgs.value[0]?.name } })
-});
-
 interface Org {
+  id?: number
   name: string
   description?: string
   logo?: string
   banner?: string
 }
 
-const orgs: Ref<Org[]> = ref([
-  {
-    name: 'Apple ML',
-    description: 'Apple ML is a machine learning company.',
-    logo: 'https://th.bing.com/th/id/OIP.cX1fKk3vsARCeW2en8W8_QHaE8?w=232&h=180&c=7&r=0&o=7&cb=ucfimg2&dpr=1.3&pid=1.7&rm=3&ucfimg=1',
-    banner: 'https://photos5.appleinsider.com/gallery/33813-59969-000-lead-ML-xl.jpg'
-  },
-  {
-    name: 'Google Research',
-    description: 'Google Research is a artificial intelligence company.',
-    logo: 'https://www.blog.google/static/blogv2/images/google-200x200.png',
-    banner: 'https://research.google/static/images/blog/google-ai-meta.png'
-  },
-  {
-    name: 'OpenAI',
-    description: 'OpenAI is a artificial intelligence research laboratory.',
-    logo: 'https://logos-world.net/wp-content/uploads/2024/08/OpenAI-Logo.png',
-    banner: 'https://img.lancdn.com/landian/2024/09/105878.png'
-  },
-  {
-    name: 'DeepMind',
-    description: 'DeepMind is a artificial intelligence company.',
-    logo: 'https://th.bing.com/th/id/OIP.Jdg6NLFts5Gvvu7KBEpfvQHaFj?w=235&h=180&c=7&r=0&o=7&cb=ucfimg2&dpr=1.3&pid=1.7&rm=3&ucfimg=1',
-    banner: 'https://hitconsultant.net/wp-content/uploads/2016/07/Google-DeepMind.png'
-  },
-  {
-    name: 'Microsoft Research',
-    description: 'Microsoft Research is a research division of Microsoft.',
-    logo: 'https://th.bing.com/th/id/OIP.S6HTesXi1haWNZpfoUbd8AHaFj?w=208&h=180&c=7&r=0&o=7&cb=ucfimg2&dpr=1.3&pid=1.7&rm=3&ucfimg=1',
-    banner: 'https://th.bing.com/th/id/OIP.S6HTesXi1haWNZpfoUbd8AHaFj?w=208&h=180&c=7&r=0&o=7&cb=ucfimg2&dpr=1.3&pid=1.7&rm=3&ucfimg=1'
-  },
-  {
-    name: 'Facebook AI Research',
-    description: 'Facebook AI Research is a artificial intelligence research laboratory.',
-    logo: 'https://th.bing.com/th/id/OIP.SwZHn_xscjcc2OqaSAykcgHaEe?w=290&h=180&c=7&r=0&o=7&cb=ucfimg2&dpr=1.3&pid=1.7&rm=3&ucfimg=1',
-    banner: 'https://th.bing.com/th/id/OIP.SwZHn_xscjcc2OqaSAykcgHaEe?w=290&h=180&c=7&r=0&o=7&cb=ucfimg2&dpr=1.3&pid=1.7&rm=3&ucfimg=1'
+const orgs = ref<Org[]>([])
+const loading = ref(false)
+
+const fetchOrgs = async () => {
+  loading.value = true
+  try {
+    const resp = await TeamApi.getMyTeams()
+    const list = (resp.data as { teamList?: Org[] }).teamList || []
+    orgs.value = list.map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      logo: t.logo,
+      banner: t.banner,
+    }))
+    if (orgs.value.length > 0) {
+      router.push({ name: 'Blog', params: { org: orgs.value[0].name } })
+    } else {
+      ElMessage.info('You have not joined any organizations yet')
+    }
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('Failed to load organizations')
+  } finally {
+    loading.value = false
   }
-])
+}
+
+onMounted(() => {
+  show.value = true;
+  fetchOrgs()
+});
 
 const toOrgBlog = (orgSlug: string) => {
   router.push({ name: 'Blog', params: { org: orgSlug } })

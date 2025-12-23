@@ -33,11 +33,11 @@ api.interceptors.request.use((config) => {
     return config
   }
 
-  // 其它需要鉴权的请求：非 /auth 路径直接带裸 token
+  // 其它需要鉴权的请求：非 /auth 路径需要 Bearer 前缀
   if (!url.startsWith('/auth')) {
     config.headers = {
       ...config.headers,
-      Authorization: token,
+      Authorization: `Bearer ${token}`,
     }
   }
   return config

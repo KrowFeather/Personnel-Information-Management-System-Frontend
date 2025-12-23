@@ -7,12 +7,21 @@
         </h1>
         <div class="w-30% flex justify-end items-center m-r-1em">
           <el-dropdown>
-            <span class="el-dropdown-link">
-              <img src="../assets/wallhaven-83we8o.jpg" alt="avatar" class="w-3em h-3em rounded-full mr-1em border border-white shadow-sm" />
+            <span class="el-dropdown-link cursor-pointer">
+              <img 
+                :src="userAvatar" 
+                :alt="userName || 'User'" 
+                class="w-3em h-3em rounded-full mr-1em border border-white shadow-sm object-cover"
+                @error="handleAvatarError"
+              />
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="handleLogout">Log out</el-dropdown-item>
+                <el-dropdown-item @click="toUserSettingPage">
+                  <el-icon class="mr-2"><Setting /></el-icon>
+                  Profile
+                </el-dropdown-item>
+                <el-dropdown-item divided @click="handleLogout">Log out</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -40,6 +49,12 @@
             </el-icon>
             <span>User Setting</span>
           </el-menu-item>
+          <el-menu-item index="4" @click="toTeamAdminPage()" v-if="hasManagedTeams">
+            <el-icon>
+              <DocumentChecked />
+            </el-icon>
+            <span>Team Applications</span>
+          </el-menu-item>
         </el-menu>
       </div>
       <div class="flex-1 h-full overflow-y-auto b-1.5px b-solid b-gray-300 bg-white">
@@ -56,16 +71,50 @@
 </template>
 
 <script setup lang="ts">
-import { Menu as IconMenu, Compass, Setting } from '@element-plus/icons-vue'
+import { Menu as IconMenu, Compass, Setting, DocumentChecked } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 import { baseUrl } from '@/net'
+import { TeamApi } from '@/api'
 import AgentInvoker from '@/components/AgentInvoker.vue'
 const router = useRouter()
 
 const showAgent = ref(false)
+const hasManagedTeams = ref(false)
+
+// 获取用户信息
+const getUserInfo = () => {
+  const userStr = localStorage.getItem('auth_user')
+  if (!userStr) return null
+  try {
+    return JSON.parse(userStr) as {
+      id?: number
+      name?: string
+      username?: string
+      email?: string
+      avatar?: string
+    }
+  } catch (e) {
+    console.error('Failed to parse user info', e)
+    return null
+  }
+}
+
+const userInfo = computed(() => getUserInfo())
+const userName = computed(() => userInfo.value?.name || userInfo.value?.username || 'User')
+const userAvatar = computed(() => {
+  const avatar = userInfo.value?.avatar
+  if (avatar) return avatar
+  // 默认头像
+  return 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userName.value) + '&background=random'
+})
+
+const handleAvatarError = (e: Event) => {
+  const img = e.target as HTMLImageElement
+  img.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userName.value) + '&background=random'
+}
 
 const handleOpen = (key: string, keyPath: string[]) => {
   console.log(key, keyPath)
@@ -85,6 +134,10 @@ const toOrganizationPage = () => {
 
 const toUserSettingPage = () => {
   router.push('/home/user')
+}
+
+const toTeamAdminPage = () => {
+  router.push('/home/team-admin')
 }
 
 const handleLogout = async () => {
@@ -125,8 +178,29 @@ const handleLogout = async () => {
   }
 }
 
+const checkManagedTeams = async () => {
+  try {
+    const myTeamsResp = await TeamApi.getMyTeams()
+    const myTeams = (myTeamsResp.data as { teamList?: Array<{ ownerId?: number }> }).teamList || []
+    const userStr = localStorage.getItem('auth_user')
+    let currentUserId: number | null = null
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr) as { id?: number; userId?: number; user_id?: number }
+        currentUserId = user.id || user.userId || user.user_id || null
+      } catch (e) {
+        console.error('Failed to parse user info', e)
+      }
+    }
+    hasManagedTeams.value = currentUserId !== null && myTeams.some(t => t.ownerId === currentUserId)
+  } catch (e) {
+    console.error('Failed to check managed teams', e)
+  }
+}
+
 onMounted(() => {
   router.push('/home/organization')
+  checkManagedTeams()
 })
 </script>
 

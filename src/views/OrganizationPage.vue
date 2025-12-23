@@ -11,7 +11,11 @@
           </div>
           <div class="h-3em w-full flex items-center justify-center">
             <div class="w-full flex justify-center items-center m-b-4em">
-              <el-input style="width: 50%; height: 4em;" placeholder="enter your organization name">
+              <el-input
+                v-model="searchKeyword"
+                style="width: 50%; height: 4em;"
+                placeholder="enter your organization name"
+              >
 
                 <template #append>
                   <el-button @click="handleSearch()">
@@ -24,69 +28,187 @@
             </div>
           </div>
         </div>
-        <div class="flex items-center m-1em">
-          <h3>Popular Organizations</h3>
+        <div class="flex items-center justify-between m-1em">
+          <h3 class="text-slate-800">Popular Organizations</h3>
+          <el-button
+            type="primary"
+            size="small"
+            class="create-org-btn"
+            @click="openCreateDialog"
+          >
+            <span class="i-ep-plus mr-1" />
+            New Organization
+          </el-button>
         </div>
         <div class="w-full flex justify-around flex-wrap">
-          <div v-for="org in orgs" :key="org.name" class="w-30% m-b-1.5em">
-            <OrgCard :org="org"></OrgCard>
+          <div v-for="org in orgs" :key="org.id || org.name" class="w-30% m-b-1.5em">
+            <OrgCard
+              :org="org"
+              :is-joined="joinedTeamIds.has(org.id!)"
+              @joined="handleOrgJoined"
+            ></OrgCard>
           </div>
         </div>
+        <el-dialog
+          v-model="createVisible"
+          title="Create Organization"
+          width="480px"
+        >
+          <el-form
+            :model="createForm"
+            :rules="createRules"
+            ref="createFormRef"
+            label-width="90px"
+          >
+            <el-form-item label="Name" prop="name">
+              <el-input v-model="createForm.name" placeholder="Organization name" />
+            </el-form-item>
+            <el-form-item label="Logo URL" prop="logo">
+              <el-input v-model="createForm.logo" placeholder="Logo image URL" />
+            </el-form-item>
+            <el-form-item label="Banner URL" prop="banner">
+              <el-input v-model="createForm.banner" placeholder="Banner image URL" />
+            </el-form-item>
+            <el-form-item label="Description" prop="description">
+              <el-input
+                v-model="createForm.description"
+                type="textarea"
+                :rows="3"
+                placeholder="Short description"
+              />
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <span class="dialog-footer">
+              <el-button @click="createVisible = false">Cancel</el-button>
+              <el-button type="primary" :loading="createLoading" @click="submitCreate">
+                Submit
+              </el-button>
+            </span>
+          </template>
+        </el-dialog>
       </div>
     </transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import OrgCard from '@/components/OrgCard.vue';
 import { onMounted } from 'vue';
 import { Search } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus'
+import { TeamApi } from '@/api'
+
+interface Org {
+  id?: number
+  name: string
+  description?: string
+  logo?: string
+  banner?: string
+}
+
 const show = ref(false);
-onMounted(() => {
-  show.value = true;
-});
-const orgs = ref([
-  {
-    name: 'Apple ML',
-    description: 'Apple ML is a machine learning company.',
-    logo: 'https://th.bing.com/th/id/OIP.cX1fKk3vsARCeW2en8W8_QHaE8?w=232&h=180&c=7&r=0&o=7&cb=ucfimg2&dpr=1.3&pid=1.7&rm=3&ucfimg=1',
-    banner: 'https://photos5.appleinsider.com/gallery/33813-59969-000-lead-ML-xl.jpg'
-  },
-  {
-    name: 'Google Research',
-    description: 'Google Research is a artificial intelligence company.',
-    logo: 'https://www.blog.google/static/blogv2/images/google-200x200.png',
-    banner: 'https://research.google/static/images/blog/google-ai-meta.png'
-  },
-  {
-    name: 'OpenAI',
-    description: 'OpenAI is a artificial intelligence research laboratory.',
-    logo: 'https://logos-world.net/wp-content/uploads/2024/08/OpenAI-Logo.png',
-    banner: 'https://img.lancdn.com/landian/2024/09/105878.png'
-  },
-  {
-    name: 'DeepMind',
-    description: 'DeepMind is a artificial intelligence company.',
-    logo: 'https://th.bing.com/th/id/OIP.Jdg6NLFts5Gvvu7KBEpfvQHaFj?w=235&h=180&c=7&r=0&o=7&cb=ucfimg2&dpr=1.3&pid=1.7&rm=3&ucfimg=1',
-    banner: 'https://hitconsultant.net/wp-content/uploads/2016/07/Google-DeepMind.png'
-  },
-  {
-    name: 'Microsoft Research',
-    description: 'Microsoft Research is a research division of Microsoft.',
-    logo: 'https://th.bing.com/th/id/OIP.S6HTesXi1haWNZpfoUbd8AHaFj?w=208&h=180&c=7&r=0&o=7&cb=ucfimg2&dpr=1.3&pid=1.7&rm=3&ucfimg=1',
-    banner: 'https://th.bing.com/th/id/OIP.S6HTesXi1haWNZpfoUbd8AHaFj?w=208&h=180&c=7&r=0&o=7&cb=ucfimg2&dpr=1.3&pid=1.7&rm=3&ucfimg=1'
-  },
-  {
-    name: 'Facebook AI Research',
-    description: 'Facebook AI Research is a artificial intelligence research laboratory.',
-    logo: 'https://th.bing.com/th/id/OIP.SwZHn_xscjcc2OqaSAykcgHaEe?w=290&h=180&c=7&r=0&o=7&cb=ucfimg2&dpr=1.3&pid=1.7&rm=3&ucfimg=1',
-    banner: 'https://th.bing.com/th/id/OIP.SwZHn_xscjcc2OqaSAykcgHaEe?w=290&h=180&c=7&r=0&o=7&cb=ucfimg2&dpr=1.3&pid=1.7&rm=3&ucfimg=1'
+const orgs = ref<Org[]>([])
+const searchKeyword = ref('')
+const loadingOrgs = ref(false)
+const joinedTeamIds = ref<Set<number>>(new Set())
+
+const fetchOrganizations = async (keyword?: string) => {
+  loadingOrgs.value = true
+  try {
+    const resp = await TeamApi.getTeamList(1)
+    const list = (resp.data as { teamList?: (Org & { id?: number })[] }).teamList || []
+    let mapped: Org[] = list.map((t) => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      logo: t.logo,
+      banner: t.banner,
+    }))
+    if (keyword && keyword.trim()) {
+      const kw = keyword.trim().toLowerCase()
+      mapped = mapped.filter(o => o.name?.toLowerCase().includes(kw))
+    }
+    orgs.value = mapped
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('Failed to load organizations')
+  } finally {
+    loadingOrgs.value = false
   }
-])
+}
+
+const fetchJoinedTeams = async () => {
+  try {
+    const resp = await TeamApi.getMyTeams()
+    const list = (resp.data as { teamList?: Org[] }).teamList || []
+    joinedTeamIds.value = new Set(list.filter(t => t.id).map(t => t.id!))
+  } catch (e) {
+    console.error('Failed to load joined teams', e)
+  }
+}
+
+onMounted(() => {
+  show.value = true
+  fetchOrganizations()
+  fetchJoinedTeams()
+});
 
 const handleSearch = () => {
-  alert('search')
+  fetchOrganizations(searchKeyword.value)
+}
+
+const handleOrgJoined = (teamId: number) => {
+  joinedTeamIds.value.add(teamId)
+}
+
+const createVisible = ref(false)
+const createLoading = ref(false)
+const createFormRef = ref()
+
+const createForm = reactive({
+  name: '',
+  banner: '',
+  logo: '',
+  description: '',
+})
+
+const createRules = {
+  name: [{ required: true, message: 'Please input name', trigger: 'blur' }],
+}
+
+const openCreateDialog = () => {
+  createVisible.value = true
+}
+
+const submitCreate = () => {
+  if (!createFormRef.value) return
+  createLoading.value = true
+  createFormRef.value.validate((valid: boolean) => {
+    if (!valid) {
+      createLoading.value = false
+      return
+    }
+    TeamApi.applyCreateTeam({
+      name: createForm.name,
+      banner: createForm.banner || undefined,
+      logo: createForm.logo || undefined,
+      description: createForm.description || undefined,
+    })
+      .then(() => {
+        ElMessage.success('Create request submitted, waiting for approval')
+        createVisible.value = false
+        fetchOrganizations(searchKeyword.value)
+      })
+      .catch((err: unknown) => {
+        console.error(err)
+        ElMessage.error('Create failed')
+      })
+      .finally(() => {
+        createLoading.value = false
+      })
+  })
 }
 </script>
 
@@ -153,5 +275,16 @@ const handleSearch = () => {
   100% {
     transform: translate3d(0, 0, 0) scale(1);
   }
+}
+
+.create-org-btn {
+  border-radius: 999px;
+  background-image: linear-gradient(120deg, #4f46e5 0%, #6366f1 40%, #0ea5e9 100%);
+  border: none;
+  box-shadow: 0 8px 18px rgba(79, 70, 229, 0.35);
+}
+
+.create-org-btn:hover {
+  filter: brightness(1.05);
 }
 </style>
