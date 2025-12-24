@@ -85,19 +85,37 @@
               </el-tab-pane>
               <el-tab-pane label="All Teams" name="all">
                 <div class="mt-4">
-                  <div class="mb-4 flex justify-between items-center">
-                    <el-input
-                      v-model="teamSearchKeyword"
-                      placeholder="Search teams..."
-                      class="w-full max-w-xs"
-                      clearable
-                      @input="handleTeamSearch"
-                    >
-                      <template #prefix>
-                        <el-icon><Search /></el-icon>
-                      </template>
-                    </el-input>
-                  </div>
+                  <el-collapse v-model="teamFilterExpanded" class="mb-4">
+                    <el-collapse-item title="Filters" name="filters">
+                      <div class="flex flex-wrap gap-3 items-end">
+                        <el-input
+                          v-model="teamSearchKeyword"
+                          placeholder="Search by name/description..."
+                          class="w-full max-w-xs"
+                          clearable
+                          @input="handleTeamSearch"
+                        >
+                          <template #prefix>
+                            <el-icon><Search /></el-icon>
+                          </template>
+                        </el-input>
+                        <el-select
+                          v-model="teamStatusFilter"
+                          placeholder="Filter by status"
+                          clearable
+                          class="w-48"
+                          @change="handleTeamSearch"
+                        >
+                          <el-option label="All" value="" />
+                          <el-option label="Pending" :value="0" />
+                          <el-option label="Approved" :value="1" />
+                          <el-option label="Rejected" :value="2" />
+                        </el-select>
+                        <el-button @click="handleTeamSearch">Apply</el-button>
+                        <el-button @click="resetTeamFilters">Reset</el-button>
+                      </div>
+                    </el-collapse-item>
+                  </el-collapse>
                   <div v-if="allTeamsLoading" class="flex justify-center items-center py-8">
                     <el-icon class="is-loading text-2xl"><Loading /></el-icon>
                   </div>
@@ -132,22 +150,47 @@
 
         <!-- 用户管理 -->
         <div v-if="activeTab === 'users'" class="w-full min-w-0">
-          <div class="mb-4">
-            <el-input
-              v-model="userSearchKeyword"
-              placeholder="Search users by username or name..."
-              class="w-full max-w-md"
-              clearable
-              @keyup.enter="handleUserSearch"
-            >
-              <template #prefix>
-                <el-icon><Search /></el-icon>
-              </template>
-              <template #append>
-                <el-button @click="handleUserSearch">Search</el-button>
-              </template>
-            </el-input>
-          </div>
+          <el-collapse v-model="userFilterExpanded" class="mb-4">
+            <el-collapse-item title="Filters" name="filters">
+              <div class="flex flex-wrap gap-3 items-end">
+                <el-input
+                  v-model="userSearchKeyword"
+                  placeholder="Search by username/name/email/phone..."
+                  class="w-full max-w-xs"
+                  clearable
+                  @keyup.enter="handleUserSearch"
+                >
+                  <template #prefix>
+                    <el-icon><Search /></el-icon>
+                  </template>
+                </el-input>
+                <el-select
+                  v-model="userRoleFilter"
+                  placeholder="Filter by role"
+                  clearable
+                  class="w-40"
+                  @change="handleUserSearch"
+                >
+                  <el-option label="All" value="" />
+                  <el-option label="Admin" :value="1" />
+                  <el-option label="User" :value="0" />
+                </el-select>
+                <el-input
+                  v-model="userEmailFilter"
+                  placeholder="Filter by email..."
+                  class="w-full max-w-xs"
+                  clearable
+                  @keyup.enter="handleUserSearch"
+                >
+                  <template #prefix>
+                    <el-icon><Message /></el-icon>
+                  </template>
+                </el-input>
+                <el-button @click="handleUserSearch">Apply</el-button>
+                <el-button @click="resetUserFilters">Reset</el-button>
+              </div>
+            </el-collapse-item>
+          </el-collapse>
           <div v-if="usersLoading" class="flex justify-center items-center py-8">
             <el-icon class="is-loading text-2xl"><Loading /></el-icon>
           </div>
@@ -192,36 +235,50 @@
 
         <!-- 推文管理 -->
         <div v-if="activeTab === 'tweets'" class="w-full min-w-0">
-          <div class="mb-4 flex gap-3 flex-wrap items-center">
-            <el-input
-              v-model="tweetKeyword"
-              placeholder="Search tweets by title/content..."
-              class="w-full max-w-md"
-              clearable
-              @keyup.enter="handleTweetSearch"
-            >
-              <template #prefix>
-                <el-icon><Search /></el-icon>
-              </template>
-              <template #append>
-                <el-button @click="handleTweetSearch">Search</el-button>
-              </template>
-            </el-input>
-            <el-select
-              v-model="tweetTeamId"
-              placeholder="Filter by team"
-              clearable
-              class="w-52"
-              @change="handleTweetSearch"
-            >
-              <el-option
-                v-for="team in allTeams"
-                :key="team.id"
-                :label="team.name"
-                :value="team.id"
-              />
-            </el-select>
-          </div>
+          <el-collapse v-model="tweetFilterExpanded" class="mb-4">
+            <el-collapse-item title="Filters" name="filters">
+              <div class="flex flex-wrap gap-3 items-end">
+                <el-input
+                  v-model="tweetKeyword"
+                  placeholder="Search by title/content..."
+                  class="w-full max-w-xs"
+                  clearable
+                  @keyup.enter="handleTweetSearch"
+                >
+                  <template #prefix>
+                    <el-icon><Search /></el-icon>
+                  </template>
+                </el-input>
+                <el-select
+                  v-model="tweetTeamId"
+                  placeholder="Filter by team"
+                  clearable
+                  class="w-52"
+                  @change="handleTweetSearch"
+                >
+                  <el-option
+                    v-for="team in allTeams"
+                    :key="team.id"
+                    :label="team.name"
+                    :value="team.id"
+                  />
+                </el-select>
+                <el-date-picker
+                  v-model="tweetDateRange"
+                  type="daterange"
+                  range-separator="To"
+                  start-placeholder="Start date"
+                  end-placeholder="End date"
+                  format="YYYY-MM-DD"
+                  value-format="YYYY-MM-DD"
+                  class="w-64"
+                  @change="handleTweetSearch"
+                />
+                <el-button @click="handleTweetSearch">Apply</el-button>
+                <el-button @click="resetTweetFilters">Reset</el-button>
+              </div>
+            </el-collapse-item>
+          </el-collapse>
           <div v-if="tweetsLoading" class="flex justify-center items-center py-8">
             <el-icon class="is-loading text-2xl"><Loading /></el-icon>
           </div>
@@ -309,29 +366,47 @@ const allTeams = ref<Team[]>([])
 const pendingTeamsLoading = ref(false)
 const allTeamsLoading = ref(false)
 const teamSearchKeyword = ref('')
+const teamStatusFilter = ref<number | ''>('')
+const teamFilterExpanded = ref<string[]>([])
 
 // 用户管理
 const users = ref<User[]>([])
 const usersLoading = ref(false)
 const userSearchKeyword = ref('')
+const userRoleFilter = ref<number | ''>('')
+const userEmailFilter = ref('')
 const usersLoaded = ref(false)
 const defaultUserPageSize = 500
 const userPageSize = ref(10)
 const userCurrentPage = ref(1)
+const userFilterExpanded = ref<string[]>([])
 const pageLoading = ref(true)
 const tweets = ref<Tweet[]>([])
 const tweetsLoading = ref(false)
 const tweetKeyword = ref('')
 const tweetTeamId = ref<number | ''>('')
+const tweetDateRange = ref<[string, string] | null>(null)
 const tweetsLoaded = ref(false)
+const tweetFilterExpanded = ref<string[]>([])
 
 const filteredAllTeams = computed(() => {
-  if (!teamSearchKeyword.value) return allTeams.value
-  const keyword = teamSearchKeyword.value.toLowerCase()
-  return allTeams.value.filter(team =>
-    team.name?.toLowerCase().includes(keyword) ||
-    team.description?.toLowerCase().includes(keyword)
-  )
+  let filtered = allTeams.value
+
+  // 关键词筛选
+  if (teamSearchKeyword.value) {
+    const keyword = teamSearchKeyword.value.toLowerCase()
+    filtered = filtered.filter(team =>
+      team.name?.toLowerCase().includes(keyword) ||
+      team.description?.toLowerCase().includes(keyword)
+    )
+  }
+
+  // 状态筛选
+  if (teamStatusFilter.value !== '') {
+    filtered = filtered.filter(team => team.status === teamStatusFilter.value)
+  }
+
+  return filtered
 })
 
 const loadUserInfo = () => {
@@ -517,24 +592,52 @@ const handleTeamSearch = () => {
   // Search is handled by computed property
 }
 
-const fetchUsers = async (keyword?: string) => {
+const resetTeamFilters = () => {
+  teamSearchKeyword.value = ''
+  teamStatusFilter.value = ''
+}
+
+const fetchUsers = async () => {
   usersLoading.value = true
   try {
-    const trimmed = keyword?.trim()
     const payload: Record<string, unknown> = {
       matchAll: false,
       offset: 0,
       size: defaultUserPageSize,
     }
-    if (trimmed) {
-      payload.username = trimmed
-      payload.email = trimmed
-      payload.name = trimmed
-      payload.phone = trimmed
+
+    // 关键词搜索
+    const keyword = userSearchKeyword.value.trim()
+    if (keyword) {
+      payload.username = keyword
+      payload.email = keyword
+      payload.name = keyword
+      payload.phone = keyword
     }
+
+    // 邮箱筛选
+    if (userEmailFilter.value.trim()) {
+      payload.email = userEmailFilter.value.trim()
+    }
+
+    // 角色筛选
+    if (userRoleFilter.value !== '') {
+      payload.admin = userRoleFilter.value
+    }
+
     const resp = await UserApi.searchUser(payload)
     const list = (resp.data as { userList?: User[] }).userList || []
-    users.value = list
+    
+    // 前端二次筛选（如果关键词和邮箱同时存在，需要进一步过滤）
+    let filtered = list
+    if (keyword && userEmailFilter.value.trim()) {
+      const emailFilter = userEmailFilter.value.trim().toLowerCase()
+      filtered = filtered.filter(user => 
+        user.email?.toLowerCase().includes(emailFilter)
+      )
+    }
+
+    users.value = filtered
     usersLoaded.value = true
     userCurrentPage.value = 1
   } catch (e) {
@@ -546,7 +649,14 @@ const fetchUsers = async (keyword?: string) => {
 }
 
 const handleUserSearch = async () => {
-  await fetchUsers(userSearchKeyword.value)
+  await fetchUsers()
+}
+
+const resetUserFilters = () => {
+  userSearchKeyword.value = ''
+  userRoleFilter.value = ''
+  userEmailFilter.value = ''
+  handleUserSearch()
 }
 
 const paginatedUsers = computed(() => {
@@ -565,7 +675,18 @@ const fetchTweets = async () => {
       tweetKeyword.value.trim() || undefined,
       tweetTeamId.value === '' ? undefined : Number(tweetTeamId.value)
     )
-    const list = (resp.data as { tweetList?: Tweet[] }).tweetList || []
+    let list = (resp.data as { tweetList?: Tweet[] }).tweetList || []
+    
+    // 时间范围筛选
+    if (tweetDateRange.value && tweetDateRange.value.length === 2) {
+      const [startDate, endDate] = tweetDateRange.value
+      list = list.filter(tweet => {
+        if (!tweet.createTime) return false
+        const tweetDate = new Date(tweet.createTime).toISOString().split('T')[0]
+        return tweetDate >= startDate && tweetDate <= endDate
+      })
+    }
+    
     tweets.value = list.map(t => ({ ...t, deleting: false }))
     tweetsLoaded.value = true
   } catch (e) {
@@ -578,6 +699,13 @@ const fetchTweets = async () => {
 
 const handleTweetSearch = async () => {
   await fetchTweets()
+}
+
+const resetTweetFilters = () => {
+  tweetKeyword.value = ''
+  tweetTeamId.value = ''
+  tweetDateRange.value = null
+  handleTweetSearch()
 }
 
 const handleDeleteTweet = async (tweetId: number | string) => {

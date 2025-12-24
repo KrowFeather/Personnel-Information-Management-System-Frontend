@@ -55,4 +55,14 @@ export const logout = () => {
   return api.post<void>('/auth/logout')
 }
 
+export interface ChangePasswordPayload {
+  username: string
+  oldPassword: string
+  newPassword: string
+}
+
+export const changePassword = (payload: ChangePasswordPayload) => {
+  return api.post<{ user: unknown }>('/auth/change-password', payload)
+}
+
 

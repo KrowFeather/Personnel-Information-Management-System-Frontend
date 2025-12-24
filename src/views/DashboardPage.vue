@@ -30,6 +30,11 @@
           <div class="h-full w-full dashboard-content">
             <router-view></router-view>
           </div>
+          <div class="absolute right-5 bottom-5 w-4em h-4em z-10">
+            <el-button type="primary" circle class="ai-btn" style="width: 4em; height: 4em;" @click="showAgent = true">
+              <h3 class="text-center text-sm font-semibold">AI+</h3>
+            </el-button>
+          </div>
         </div>
       </div>
     </transition>
@@ -42,9 +47,11 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import { TeamApi } from '@/api'
+import { useAgent } from '@/composables/useAgent'
 
 const show = ref(false);
 const router = useRouter()
+const { showAgent } = useAgent()
 
 interface Org {
   id?: number
@@ -121,5 +128,24 @@ const toOrgBlog = (orgSlug: string) => {
 .sci-menu :deep(.el-menu-item.is-active) {
   background-image: linear-gradient(135deg, #e0e7ff, #c7d2fe);
   color: #1d4ed8;
+}
+
+.ai-btn {
+  background-image: radial-gradient(circle at 0% 0%, #a5b4fc, #6366f1);
+  border: none;
+  animation: glow-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(129, 140, 248, 0.45),
+      0 0 16px rgba(79, 70, 229, 0.35);
+  }
+
+  50% {
+    box-shadow: 0 0 12px rgba(129, 140, 248, 0.9),
+      0 0 24px rgba(79, 70, 229, 0.7);
+  }
 }
 </style>

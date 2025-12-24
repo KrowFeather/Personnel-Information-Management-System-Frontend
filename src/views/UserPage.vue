@@ -205,13 +205,61 @@
                         <div class="text-sm font-medium text-slate-600 mb-1">Password</div>
                         <div class="text-xs text-slate-400">Change your account password</div>
                       </div>
-                      <el-button type="primary" plain @click="handleChangePassword">
+                      <el-button type="primary" plain @click="openChangePasswordDialog">
                         <el-icon class="mr-1"><Lock /></el-icon>
                         Change Password
                       </el-button>
                     </div>
                   </div>
                 </div>
+
+                <!-- Change Password Dialog -->
+                <el-dialog
+                  v-model="changePasswordDialogVisible"
+                  title="Change Password"
+                  width="500px"
+                >
+                  <el-form
+                    :model="changePasswordForm"
+                    :rules="changePasswordRules"
+                    ref="changePasswordFormRef"
+                    label-width="120px"
+                    label-position="left"
+                  >
+                    <el-form-item label="Old Password" prop="oldPassword">
+                      <el-input
+                        v-model="changePasswordForm.oldPassword"
+                        type="password"
+                        placeholder="Enter old password"
+                        show-password
+                      />
+                    </el-form-item>
+                    <el-form-item label="New Password" prop="newPassword">
+                      <el-input
+                        v-model="changePasswordForm.newPassword"
+                        type="password"
+                        placeholder="Enter new password"
+                        show-password
+                      />
+                    </el-form-item>
+                    <el-form-item label="Confirm Password" prop="confirmPassword">
+                      <el-input
+                        v-model="changePasswordForm.confirmPassword"
+                        type="password"
+                        placeholder="Confirm new password"
+                        show-password
+                      />
+                    </el-form-item>
+                  </el-form>
+                  <template #footer>
+                    <span class="dialog-footer">
+                      <el-button @click="changePasswordDialogVisible = false">Cancel</el-button>
+                      <el-button type="primary" :loading="changingPassword" @click="handleChangePassword">
+                        Change Password
+                      </el-button>
+                    </span>
+                  </template>
+                </el-dialog>
 
                 <!-- Danger Zone -->
                 <div class="bg-white rounded-lg shadow-sm border border-red-200 p-6">
@@ -243,6 +291,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { User, Message, Avatar, Lock, SwitchButton, Edit, Picture, Calendar, Phone, UserFilled, Location } from '@element-plus/icons-vue'
 import OrgCard from "@/components/OrgCard.vue";
 import { TeamApi, AuthApi, UserApi } from '@/api'
+import type { ChangePasswordPayload } from '@/api/auth'
 import { clearAuth, saveAuth } from '@/net'
 
 const router = useRouter()
@@ -293,6 +342,9 @@ const userAvatar = computed(() => {
 const editDialogVisible = ref(false)
 const updating = ref(false)
 const editFormRef = ref()
+const changePasswordDialogVisible = ref(false)
+const changingPassword = ref(false)
+const changePasswordFormRef = ref()
 
 const editForm = reactive({
   name: '',
@@ -303,12 +355,40 @@ const editForm = reactive({
   address: '',
 })
 
+const changePasswordForm = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+})
+
 const editRules = {
   name: [
     { max: 50, message: 'Name should not exceed 50 characters', trigger: 'blur' }
   ],
   phone: [
     { pattern: /^[0-9+\-\s()]*$/, message: 'Please enter a valid phone number', trigger: 'blur' }
+  ],
+}
+
+const validateConfirmPassword = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
+  if (value !== changePasswordForm.newPassword) {
+    callback(new Error('Passwords do not match'))
+  } else {
+    callback()
+  }
+}
+
+const changePasswordRules = {
+  oldPassword: [
+    { required: true, message: 'Please enter old password', trigger: 'blur' }
+  ],
+  newPassword: [
+    { required: true, message: 'Please enter new password', trigger: 'blur' },
+    { min: 6, message: 'Password must be at least 6 characters', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: 'Please confirm new password', trigger: 'blur' },
+    { validator: validateConfirmPassword, trigger: 'blur' }
   ],
 }
 
@@ -442,8 +522,57 @@ const fetchCreatedOrgs = async () => {
   }
 }
 
-const handleChangePassword = () => {
-  ElMessage.info('Change password feature coming soon')
+const openChangePasswordDialog = () => {
+  changePasswordForm.oldPassword = ''
+  changePasswordForm.newPassword = ''
+  changePasswordForm.confirmPassword = ''
+  changePasswordDialogVisible.value = true
+}
+
+const handleChangePassword = async () => {
+  if (!changePasswordFormRef.value || !userInfo.value?.username) return
+
+  changingPassword.value = true
+  changePasswordFormRef.value.validate(async (valid: boolean) => {
+    if (!valid) {
+      changingPassword.value = false
+      return
+    }
+
+    try {
+      if (!userInfo.value?.username) {
+        ElMessage.error('User information is missing')
+        changingPassword.value = false
+        return
+      }
+
+      const payload: ChangePasswordPayload = {
+        username: userInfo.value.username,
+        oldPassword: changePasswordForm.oldPassword,
+        newPassword: changePasswordForm.newPassword,
+      }
+
+      await AuthApi.changePassword(payload)
+      ElMessage.success('Password changed successfully. Please login again.')
+      changePasswordDialogVisible.value = false
+      changePasswordForm.oldPassword = ''
+      changePasswordForm.newPassword = ''
+      changePasswordForm.confirmPassword = ''
+
+      // 清除认证信息并跳转到登录页
+      clearAuth()
+      setTimeout(() => {
+        router.push('/login')
+      }, 1000)
+    } catch (e: unknown) {
+      console.error('Failed to change password', e)
+      const err = e as { response?: { data?: { error?: string } }; message?: string }
+      const errorMsg = err?.response?.data?.error || err?.message || 'Failed to change password'
+      ElMessage.error(errorMsg)
+    } finally {
+      changingPassword.value = false
+    }
+  })
 }
 
 const handleLogout = async () => {

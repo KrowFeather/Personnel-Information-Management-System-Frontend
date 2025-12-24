@@ -66,7 +66,6 @@
         </el-button>
       </div>
     </div>
-    <AgentInvoker v-model="showAgent" />
   </div>
 </template>
 
@@ -78,11 +77,11 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 import { baseUrl } from '@/net'
 import { TeamApi } from '@/api'
-import AgentInvoker from '@/components/AgentInvoker.vue'
+import { useAgent } from '@/composables/useAgent'
 const router = useRouter()
 const route = useRoute()
 
-const showAgent = ref(false)
+const { showAgent } = useAgent()
 const hasManagedTeams = ref(false)
 
 // 根据当前路由确定激活的菜单项
