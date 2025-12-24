@@ -53,7 +53,7 @@
             <el-icon>
               <DocumentChecked />
             </el-icon>
-            <span>Team Applications</span>
+            <span>Team Management</span>
           </el-menu-item>
         </el-menu>
       </div>

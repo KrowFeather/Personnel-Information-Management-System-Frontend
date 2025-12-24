@@ -185,6 +185,7 @@ const handleLeaveTeam = async (teamId: number) => {
 .sci-menu {
   border-right: none;
   padding-top: 0.75rem;
+  height: calc(100vh - 4em);
 }
 
 .sci-menu :deep(.el-menu-item) {
