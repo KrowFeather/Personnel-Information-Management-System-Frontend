@@ -4,8 +4,8 @@
       <div v-show="show" class="w-full h-full flex flex-col overflow-hidden">
         <div class="h-20em w-full flex items-center surface relative overflow-hidden flex-shrink-0">
           <div class="h-full w-full flex items-center m-l-3em relative z-10">
-            <img 
-              :src="userAvatar" 
+            <img
+              :src="userAvatar"
               :alt="userName"
               class="h-8em w-8em rounded-1em object-cover border-2 border-white shadow-lg flex-shrink-0"
               @error="handleAvatarError"
@@ -31,7 +31,12 @@
                 You haven't joined any organizations yet
               </div>
               <div v-else class="grid grid-cols-3 gap-4 pb-4">
-                <OrgCard v-for="org in joinedOrgs" :key="org.id" :org="org" />
+                <OrgCard
+                  v-for="org in joinedOrgs"
+                  :key="org.id"
+                  :org="org"
+                  :is-joined="true"
+                />
               </div>
             </el-tab-pane>
             <el-tab-pane label="Created" name="second">
@@ -40,7 +45,12 @@
                 You haven't created any organizations yet
               </div>
               <div v-else class="grid grid-cols-3 gap-4 pb-4">
-                <OrgCard v-for="org in createdOrgs" :key="org.id" :org="org" />
+                <OrgCard
+                  v-for="org in createdOrgs"
+                  :key="org.id"
+                  :org="org"
+                  :is-joined="true"
+                />
               </div>
             </el-tab-pane>
             <el-tab-pane label="Settings" name="third">
@@ -80,8 +90,8 @@
                       <div class="flex-1">
                         <div class="text-sm font-medium text-slate-600">Avatar</div>
                         <div class="mt-2">
-                          <img 
-                            :src="userAvatar" 
+                          <img
+                            :src="userAvatar"
                             :alt="userName"
                             class="h-16 w-16 rounded-lg object-cover border border-slate-200"
                             @error="handleAvatarError"
@@ -140,8 +150,8 @@
                     <el-form-item label="Avatar URL" prop="avatar">
                       <el-input v-model="editForm.avatar" placeholder="Enter avatar image URL" />
                       <div v-if="editForm.avatar" class="mt-2">
-                        <img 
-                          :src="editForm.avatar" 
+                        <img
+                          :src="editForm.avatar"
                           alt="Preview"
                           class="h-20 w-20 rounded-lg object-cover border border-slate-200"
                           @error="handlePreviewError"
@@ -168,8 +178,8 @@
                       </el-radio-group>
                     </el-form-item>
                     <el-form-item label="Address" prop="address">
-                      <el-input 
-                        v-model="editForm.address" 
+                      <el-input
+                        v-model="editForm.address"
                         type="textarea"
                         :rows="2"
                         placeholder="Enter address"
@@ -307,7 +317,7 @@ const formatBirthday = (birthday?: string) => {
   try {
     const date = new Date(birthday)
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-  } catch (e) {
+  } catch {
     return birthday
   }
 }
@@ -335,7 +345,9 @@ const handlePreviewError = (e: Event) => {
 
 const handleUpdateProfile = async () => {
   if (!editFormRef.value || !userInfo.value?.id) return
-  
+  const userId = Number(userInfo.value.id)
+  if (!Number.isFinite(userId)) return
+
   updating.value = true
   editFormRef.value.validate(async (valid: boolean) => {
     if (!valid) {
@@ -353,7 +365,7 @@ const handleUpdateProfile = async () => {
         gender?: number
         address?: string
       } = {
-        userId: userInfo.value.id,
+        userId,
       }
 
       if (editForm.name) payload.name = editForm.name
@@ -365,7 +377,7 @@ const handleUpdateProfile = async () => {
 
       const resp = await UserApi.updateUserInfo(payload)
       const updatedUser = (resp.data as { user?: typeof userInfo.value }).user
-      
+
       if (updatedUser) {
         // 更新本地存储的用户信息
         saveAuth(undefined, updatedUser)

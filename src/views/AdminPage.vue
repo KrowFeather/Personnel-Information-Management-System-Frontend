@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-screen admin-bg overflow-hidden">
+  <div class="w-full h-screen admin-bg overflow-hidden relative">
     <div class="h-4em w-full flex items-center shadow-md z-100 fixed top-0">
       <div class="flex justify-between items-center h-full w-full nav px-4">
         <h1 class="text-xl font-semibold m-l-1em text-slate-800 tracking-wide">
@@ -25,6 +25,12 @@
       </div>
     </div>
     <div class="flex h-[calc(100vh-4em)] overflow-hidden relative m-t-4em px-3 gap-3 min-w-0">
+      <div
+        v-if="pageLoading"
+        class="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center"
+      >
+        <el-icon class="is-loading text-3xl text-slate-600"><Loading /></el-icon>
+      </div>
       <div class="w-13% h-full flex-shrink-0 min-w-0">
         <el-menu :default-active="activeTab" class="h-100% sci-menu" @select="handleMenuSelect">
           <el-menu-item index="teams">
@@ -35,9 +41,13 @@
             <el-icon><User /></el-icon>
             <span>User Management</span>
           </el-menu-item>
+          <el-menu-item index="tweets">
+            <el-icon><Message /></el-icon>
+            <span>Tweet Management</span>
+          </el-menu-item>
         </el-menu>
       </div>
-      <div class="flex-1 h-full overflow-y-auto b-1.5px b-solid b-gray-300 bg-white rounded-lg p-4 min-w-0 max-w-full">
+      <div class="flex-1 h-[calc(100vh-6em)] overflow-y-auto b-1.5px b-solid b-gray-300 bg-white rounded-lg p-4 pb-16 min-w-0 max-w-full">
         <!-- 团队管理 -->
         <div v-if="activeTab === 'teams'" class="w-full min-w-0">
           <div class="mb-4">
@@ -141,15 +151,12 @@
           <div v-if="usersLoading" class="flex justify-center items-center py-8">
             <el-icon class="is-loading text-2xl"><Loading /></el-icon>
           </div>
-          <div v-else-if="users.length === 0 && userSearchKeyword" class="text-center py-8 text-slate-400">
-            No users found
-          </div>
           <div v-else-if="users.length === 0" class="text-center py-8 text-slate-400">
-            Enter a keyword to search users
+            No users found
           </div>
           <div v-else class="space-y-4">
             <div
-              v-for="user in users"
+              v-for="user in paginatedUsers"
               :key="user.id"
               class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow min-w-0"
             >
@@ -170,6 +177,82 @@
                 </el-tag>
               </div>
             </div>
+            <div class="flex justify-center pt-2" v-if="users.length > userPageSize">
+              <el-pagination
+                background
+                layout="prev, pager, next"
+                :page-size="userPageSize"
+                :total="users.length"
+                v-model:current-page="userCurrentPage"
+                @current-change="handleUserPageChange"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- 推文管理 -->
+        <div v-if="activeTab === 'tweets'" class="w-full min-w-0">
+          <div class="mb-4 flex gap-3 flex-wrap items-center">
+            <el-input
+              v-model="tweetKeyword"
+              placeholder="Search tweets by title/content..."
+              class="w-full max-w-md"
+              clearable
+              @keyup.enter="handleTweetSearch"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+              <template #append>
+                <el-button @click="handleTweetSearch">Search</el-button>
+              </template>
+            </el-input>
+            <el-select
+              v-model="tweetTeamId"
+              placeholder="Filter by team"
+              clearable
+              class="w-52"
+              @change="handleTweetSearch"
+            >
+              <el-option
+                v-for="team in allTeams"
+                :key="team.id"
+                :label="team.name"
+                :value="team.id"
+              />
+            </el-select>
+          </div>
+          <div v-if="tweetsLoading" class="flex justify-center items-center py-8">
+            <el-icon class="is-loading text-2xl"><Loading /></el-icon>
+          </div>
+          <div v-else-if="tweets.length === 0" class="text-center py-8 text-slate-400">
+            No tweets found
+          </div>
+          <div v-else class="space-y-4">
+            <div
+              v-for="tweet in tweets"
+              :key="tweet.id"
+              class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow min-w-0"
+            >
+              <div class="flex justify-between items-start gap-3">
+                <div class="min-w-0">
+                  <p class="text-xs text-slate-400 mb-1">Team #{{ tweet.teamId }}</p>
+                  <h3 class="text-lg font-semibold text-slate-800 truncate">{{ tweet.title }}</h3>
+                  <p class="text-sm text-slate-600 line-clamp-2 mt-1">
+                    {{ tweet.content || 'No content' }}
+                  </p>
+                  <p class="text-xs text-slate-400 mt-1">Created: {{ tweet.createTime || 'N/A' }}</p>
+                </div>
+                <el-button
+                  type="danger"
+                  size="small"
+                  :loading="tweet.deleting"
+                  @click="handleDeleteTweet(tweet.id)"
+                >
+                  Delete
+                </el-button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -181,8 +264,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { OfficeBuilding, User, Search, Loading } from '@element-plus/icons-vue'
-import { TeamApi, UserApi } from '@/api'
+import { OfficeBuilding, User, Message, Search, Loading } from '@element-plus/icons-vue'
+import { TeamApi, UserApi, TweetApi } from '@/api'
 import { clearAuth } from '@/net'
 
 const router = useRouter()
@@ -211,6 +294,15 @@ interface User {
   admin?: number
 }
 
+interface Tweet {
+  id: number | string
+  teamId: number
+  title: string
+  content?: string
+  createTime?: string
+  deleting?: boolean
+}
+
 // 团队管理
 const pendingTeams = ref<Team[]>([])
 const allTeams = ref<Team[]>([])
@@ -222,6 +314,16 @@ const teamSearchKeyword = ref('')
 const users = ref<User[]>([])
 const usersLoading = ref(false)
 const userSearchKeyword = ref('')
+const usersLoaded = ref(false)
+const defaultUserPageSize = 500
+const userPageSize = ref(10)
+const userCurrentPage = ref(1)
+const pageLoading = ref(true)
+const tweets = ref<Tweet[]>([])
+const tweetsLoading = ref(false)
+const tweetKeyword = ref('')
+const tweetTeamId = ref<number | ''>('')
+const tweetsLoaded = ref(false)
 
 const filteredAllTeams = computed(() => {
   if (!teamSearchKeyword.value) return allTeams.value
@@ -252,6 +354,15 @@ const handleAvatarError = (e: Event) => {
 
 const handleMenuSelect = (key: string) => {
   activeTab.value = key
+  if (key === 'users' && !usersLoaded.value) {
+    fetchUsers()
+  }
+  if (key === 'tweets' && !tweetsLoaded.value) {
+    if (allTeams.value.length === 0) {
+      fetchAllTeams()
+    }
+    fetchTweets()
+  }
 }
 
 const handleTeamTabChange = (tab: string) => {
@@ -285,7 +396,9 @@ const fetchAllTeams = async () => {
   try {
     const resp = await TeamApi.getTeamList() // 不传 status 获取所有团队
     const list = (resp.data as { teamList?: Team[] }).teamList || []
-    allTeams.value = list.map(team => ({
+    allTeams.value = list
+      .filter(team => team.status !== 3) // hide deleted teams
+      .map(team => ({
       ...team,
       deleting: false,
     }))
@@ -404,24 +517,93 @@ const handleTeamSearch = () => {
   // Search is handled by computed property
 }
 
-const handleUserSearch = async () => {
-  if (!userSearchKeyword.value.trim()) {
-    ElMessage.warning('Please enter a search keyword')
-    return
-  }
-
+const fetchUsers = async (keyword?: string) => {
   usersLoading.value = true
   try {
-    const resp = await UserApi.searchUser({
-      keyword: userSearchKeyword.value.trim(),
-    })
+    const trimmed = keyword?.trim()
+    const payload: Record<string, unknown> = {
+      matchAll: false,
+      offset: 0,
+      size: defaultUserPageSize,
+    }
+    if (trimmed) {
+      payload.username = trimmed
+      payload.email = trimmed
+      payload.name = trimmed
+      payload.phone = trimmed
+    }
+    const resp = await UserApi.searchUser(payload)
     const list = (resp.data as { userList?: User[] }).userList || []
     users.value = list
+    usersLoaded.value = true
+    userCurrentPage.value = 1
   } catch (e) {
     console.error('Failed to search users', e)
     ElMessage.error('Failed to search users')
   } finally {
     usersLoading.value = false
+  }
+}
+
+const handleUserSearch = async () => {
+  await fetchUsers(userSearchKeyword.value)
+}
+
+const paginatedUsers = computed(() => {
+  const start = (userCurrentPage.value - 1) * userPageSize.value
+  return users.value.slice(start, start + userPageSize.value)
+})
+
+const handleUserPageChange = (page: number) => {
+  userCurrentPage.value = page
+}
+
+const fetchTweets = async () => {
+  tweetsLoading.value = true
+  try {
+    const resp = await TweetApi.searchTweet(
+      tweetKeyword.value.trim() || undefined,
+      tweetTeamId.value === '' ? undefined : Number(tweetTeamId.value)
+    )
+    const list = (resp.data as { tweetList?: Tweet[] }).tweetList || []
+    tweets.value = list.map(t => ({ ...t, deleting: false }))
+    tweetsLoaded.value = true
+  } catch (e) {
+    console.error('Failed to load tweets', e)
+    ElMessage.error('Failed to load tweets')
+  } finally {
+    tweetsLoading.value = false
+  }
+}
+
+const handleTweetSearch = async () => {
+  await fetchTweets()
+}
+
+const handleDeleteTweet = async (tweetId: number | string) => {
+  const tweet = tweets.value.find(t => t.id === tweetId)
+  if (!tweet) return
+  try {
+    await ElMessageBox.confirm(
+      'Are you sure you want to delete this tweet?',
+      'Delete Tweet',
+      {
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        type: 'error',
+      }
+    )
+    tweet.deleting = true
+    await TweetApi.deleteTweet(tweetId)
+    ElMessage.success('Tweet deleted')
+    await fetchTweets()
+  } catch (e: unknown) {
+    if ((e as { action?: string }).action !== 'cancel') {
+      console.error('Failed to delete tweet', e)
+      ElMessage.error('Failed to delete tweet')
+    }
+  } finally {
+    tweet.deleting = false
   }
 }
 
@@ -444,9 +626,13 @@ const handleLogout = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadUserInfo()
-  fetchPendingTeams()
+  try {
+    await fetchPendingTeams()
+  } finally {
+    pageLoading.value = false
+  }
 })
 </script>
 

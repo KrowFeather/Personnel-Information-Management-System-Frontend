@@ -1,14 +1,17 @@
 <template>
-  <div class="w-full h-full z-[10] overflow-hidden dashboard-shell">
+  <div class="w-full h-full z-[10] overflow-hidden dashboard-shell relative">
     <transition name="el-fade-in-linear">
       <div v-show="show">
-        <div class="w-full h-full flex overflow-hidden">
+        <div class="w-full h-full flex overflow-hidden relative">
+          <div
+            v-if="loading"
+            class="absolute inset-0 z-50 bg-white/70 backdrop-blur-sm flex items-center justify-center"
+          >
+            <el-icon class="is-loading text-3xl text-slate-600"><Loading /></el-icon>
+          </div>
           <div class="w-20% h-full dashboard-menu">
             <el-menu class="sci-menu h-full" :default-active="'0'">
-              <div v-if="loading" class="p-4 text-center text-slate-400 text-sm">
-                Loading...
-              </div>
-              <div v-else-if="orgs.length === 0" class="p-4 text-center text-slate-400 text-sm">
+              <div v-if="!loading && orgs.length === 0" class="p-4 text-center text-slate-400 text-sm">
                 No organizations
               </div>
               <el-menu-item
@@ -37,6 +40,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Loading } from '@element-plus/icons-vue'
 import { TeamApi } from '@/api'
 
 const show = ref(false);

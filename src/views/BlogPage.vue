@@ -292,6 +292,7 @@ const fetchTeamInfo = async () => {
       console.error('Failed to load tweets', e)
       tweets.value = []
     }
+    console.log('tweets', tweets.value)
 
     // 获取团队成员（如果用户不是成员会返回 403，这是正常的）
     if (currentTeam.value?.id) {

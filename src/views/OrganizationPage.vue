@@ -1,7 +1,13 @@
 <template>
-  <div class="w-full h-full">
+  <div class="w-full h-full relative">
     <transition name="el-fade-in-linear">
       <div v-show="show" class="w-full flex flex-col">
+        <div
+          v-if="loadingOrgs"
+          class="absolute inset-0 z-40 bg-white/80 backdrop-blur-[2px] flex items-center justify-center"
+        >
+          <el-icon class="is-loading text-3xl text-slate-600"><Loading /></el-icon>
+        </div>
         <div class="w-full h-22em banner">
           <div class="m-2em flex items-center h-15em">
             <div>
@@ -96,7 +102,7 @@
 import { ref, reactive } from 'vue'
 import OrgCard from '@/components/OrgCard.vue';
 import { onMounted } from 'vue';
-import { Search } from '@element-plus/icons-vue';
+import { Search, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus'
 import { TeamApi } from '@/api'
 

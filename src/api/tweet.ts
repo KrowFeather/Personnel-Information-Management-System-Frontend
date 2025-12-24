@@ -14,9 +14,7 @@ export const sendTweet = (payload: TweetSendPayload) => {
 export const deleteTweet = (tweetId: number | string) => {
   const tweetIdStr = String(tweetId)
   console.log('Calling deleteTweet API with tweetId:', tweetIdStr)
-  return api.post<{ tweet: unknown }>('/tweet/delete', null, {
-    params: { tweetId: tweetIdStr },
-  })
+  return api.post<{ tweet: unknown }>('/tweet/delete', null,{params: {tweetId: tweetIdStr}})
 }
 
 export const searchTweet = (keyword?: string, teamId?: number) => {
