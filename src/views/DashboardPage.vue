@@ -19,11 +19,27 @@
                 :index="String(idx)"
                 @click="toOrgBlog(item.name)"
                 :key="idx"
+                class="org-menu-item"
               >
                 <img :src="item.logo" alt="" class="w-3.2em h-3.2em rounded-lg shadow-sm object-cover">
                 <span class="flex-1 m-l-1em font-medium text-slate-800 truncate">
                   {{ item.name }}
                 </span>
+                <el-dropdown
+                  v-if="!isTeamOwner(item)"
+                  trigger="click"
+                  @command="(cmd: string) => handleLeaveTeam(Number(cmd))"
+                  @click.stop
+                >
+                  <el-icon class="ml-2 cursor-pointer hover:text-red-600 transition-colors" @click.stop><MoreFilled /></el-icon>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item :command="String(item.id)" class="text-red-600">
+                        Leave Team
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
               </el-menu-item>
             </el-menu>
           </div>
@@ -42,10 +58,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { Loading } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Loading, MoreFilled } from '@element-plus/icons-vue'
 import { TeamApi } from '@/api'
 import { useAgent } from '@/composables/useAgent'
 
@@ -59,10 +75,33 @@ interface Org {
   description?: string
   logo?: string
   banner?: string
+  ownerId?: number
+  owner_id?: number
 }
 
 const orgs = ref<Org[]>([])
 const loading = ref(false)
+
+// 获取当前用户ID
+const getCurrentUserId = () => {
+  const userStr = localStorage.getItem('auth_user')
+  if (!userStr) return null
+  try {
+    const user = JSON.parse(userStr) as { id?: number }
+    return user.id
+  } catch {
+    return null
+  }
+}
+
+const currentUserId = computed(() => getCurrentUserId())
+
+// 判断是否是团队创建者
+const isTeamOwner = (org: Org) => {
+  if (!currentUserId.value) return false
+  const ownerId = org.ownerId || (org as unknown as { owner_id?: number }).owner_id
+  return ownerId === currentUserId.value
+}
 
 const fetchOrgs = async () => {
   loading.value = true
@@ -75,8 +114,10 @@ const fetchOrgs = async () => {
       description: t.description,
       logo: t.logo,
       banner: t.banner,
+      ownerId: t.ownerId || (t as unknown as { owner_id?: number }).owner_id,
+      owner_id: (t as unknown as { owner_id?: number }).owner_id,
     }))
-    if (orgs.value.length > 0) {
+    if (orgs.value.length > 0 && orgs.value[0]?.name) {
       router.push({ name: 'Blog', params: { org: orgs.value[0].name } })
     } else {
       ElMessage.info('You have not joined any organizations yet')
@@ -96,6 +137,32 @@ onMounted(() => {
 
 const toOrgBlog = (orgSlug: string) => {
   router.push({ name: 'Blog', params: { org: orgSlug } })
+}
+
+const handleLeaveTeam = async (teamId: number) => {
+  const team = orgs.value.find(t => t.id === teamId)
+  if (!team || !team.id) return
+
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to leave "${team.name}"?`,
+      'Leave Team',
+      {
+        confirmButtonText: 'Leave',
+        cancelButtonText: 'Cancel',
+        type: 'warning',
+      }
+    )
+
+    await TeamApi.leaveTeam(teamId)
+    ElMessage.success('Left team successfully')
+    await fetchOrgs()
+  } catch (e: unknown) {
+    if ((e as { action?: string }).action !== 'cancel') {
+      console.error('Failed to leave team', e)
+      ElMessage.error('Failed to leave team')
+    }
+  }
 }
 </script>
 
@@ -128,6 +195,19 @@ const toOrgBlog = (orgSlug: string) => {
 .sci-menu :deep(.el-menu-item.is-active) {
   background-image: linear-gradient(135deg, #e0e7ff, #c7d2fe);
   color: #1d4ed8;
+}
+
+.org-menu-item {
+  position: relative;
+}
+
+.org-menu-item :deep(.el-dropdown) {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.org-menu-item:hover :deep(.el-dropdown) {
+  opacity: 1;
 }
 
 .ai-btn {

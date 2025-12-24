@@ -31,12 +31,22 @@
                 You haven't joined any organizations yet
               </div>
               <div v-else class="grid grid-cols-3 gap-4 pb-4">
-                <OrgCard
-                  v-for="org in joinedOrgs"
-                  :key="org.id"
-                  :org="org"
-                  :is-joined="true"
-                />
+                <div v-for="org in joinedOrgs" :key="org.id" class="relative">
+                  <OrgCard
+                    :org="org"
+                    :is-joined="true"
+                  />
+                  <el-button
+                    v-if="!isTeamOwner(org)"
+                    type="danger"
+                    size="small"
+                    class="absolute top-2 right-2"
+                    :loading="org.leaving"
+                    @click="handleLeaveTeam(org.id!)"
+                  >
+                    Leave
+                  </el-button>
+                </div>
               </div>
             </el-tab-pane>
             <el-tab-pane label="Created" name="second">
@@ -294,6 +304,10 @@ import { TeamApi, AuthApi, UserApi } from '@/api'
 import type { ChangePasswordPayload } from '@/api/auth'
 import { clearAuth, saveAuth } from '@/net'
 
+interface OrgWithLeaving extends Org {
+  leaving?: boolean
+}
+
 const router = useRouter()
 const show = ref(false);
 const activeName = ref("first");
@@ -479,10 +493,17 @@ const handleAvatarError = (e: Event) => {
   img.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userName.value) + '&background=random'
 }
 
-const joinedOrgs = ref<Org[]>([])
+const joinedOrgs = ref<OrgWithLeaving[]>([])
 const createdOrgs = ref<Org[]>([])
 const loadingJoined = ref(false)
 const loadingCreated = ref(false)
+
+// 判断是否是团队创建者
+const isTeamOwner = (org: Org) => {
+  if (!userInfo.value?.id) return false
+  const ownerId = org.ownerId || org.owner_id
+  return ownerId === userInfo.value.id
+}
 
 const fetchJoinedOrgs = async () => {
   loadingJoined.value = true
@@ -491,15 +512,48 @@ const fetchJoinedOrgs = async () => {
     const list = (resp.data as { teamList?: Org[] }).teamList || []
     const currentUserId = userInfo.value?.id
     // 排除用户创建的组织
-    joinedOrgs.value = list.filter(org => {
-      const ownerId = org.ownerId || org.owner_id
-      return ownerId !== currentUserId
-    })
+    joinedOrgs.value = list
+      .filter(org => {
+        const ownerId = org.ownerId || org.owner_id
+        return ownerId !== currentUserId
+      })
+      .map(org => ({ ...org, leaving: false }))
   } catch (e) {
     console.error(e)
     ElMessage.error('Failed to load joined organizations')
   } finally {
     loadingJoined.value = false
+  }
+}
+
+const handleLeaveTeam = async (teamId: number) => {
+  const team = joinedOrgs.value.find(t => t.id === teamId)
+  if (!team) return
+
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to leave "${team.name}"?`,
+      'Leave Team',
+      {
+        confirmButtonText: 'Leave',
+        cancelButtonText: 'Cancel',
+        type: 'warning',
+      }
+    )
+
+    team.leaving = true
+    await TeamApi.leaveTeam(teamId)
+    ElMessage.success('Left team successfully')
+    await fetchJoinedOrgs()
+  } catch (e: unknown) {
+    if ((e as { action?: string }).action !== 'cancel') {
+      console.error('Failed to leave team', e)
+      ElMessage.error('Failed to leave team')
+    }
+  } finally {
+    if (team) {
+      team.leaving = false
+    }
   }
 }
 

@@ -69,11 +69,59 @@
             <el-form-item label="Name" prop="name">
               <el-input v-model="createForm.name" placeholder="Organization name" />
             </el-form-item>
-            <el-form-item label="Logo URL" prop="logo">
-              <el-input v-model="createForm.logo" placeholder="Logo image URL" />
+            <el-form-item label="Logo" prop="logo">
+              <div class="w-full">
+                <el-upload
+                  :action="''"
+                  :auto-upload="false"
+                  :show-file-list="false"
+                  :on-change="(file: UploadFile) => handleLogoChange(file)"
+                  accept="image/*"
+                  class="w-full"
+                >
+                  <template #trigger>
+                    <el-button type="primary" size="small" plain :loading="uploadingLogo">
+                      <el-icon class="mr-1"><Upload /></el-icon>
+                      {{ createForm.logo ? 'Change Logo' : 'Upload Logo' }}
+                    </el-button>
+                  </template>
+                </el-upload>
+                <div v-if="createForm.logo" class="mt-2">
+                  <img
+                    :src="createForm.logo"
+                    alt="Logo Preview"
+                    class="max-w-full h-32 object-contain rounded-lg border border-slate-200 bg-slate-50"
+                    @error="handleImageError"
+                  />
+                </div>
+              </div>
             </el-form-item>
-            <el-form-item label="Banner URL" prop="banner">
-              <el-input v-model="createForm.banner" placeholder="Banner image URL" />
+            <el-form-item label="Banner" prop="banner">
+              <div class="w-full">
+                <el-upload
+                  :action="''"
+                  :auto-upload="false"
+                  :show-file-list="false"
+                  :on-change="(file: UploadFile) => handleBannerChange(file)"
+                  accept="image/*"
+                  class="w-full"
+                >
+                  <template #trigger>
+                    <el-button type="primary" size="small" plain :loading="uploadingBanner">
+                      <el-icon class="mr-1"><Upload /></el-icon>
+                      {{ createForm.banner ? 'Change Banner' : 'Upload Banner' }}
+                    </el-button>
+                  </template>
+                </el-upload>
+                <div v-if="createForm.banner" class="mt-2">
+                  <img
+                    :src="createForm.banner"
+                    alt="Banner Preview"
+                    class="max-w-full h-32 object-cover rounded-lg border border-slate-200"
+                    @error="handleImageError"
+                  />
+                </div>
+              </div>
             </el-form-item>
             <el-form-item label="Description" prop="description">
               <el-input
@@ -102,9 +150,10 @@
 import { ref, reactive } from 'vue'
 import OrgCard from '@/components/OrgCard.vue';
 import { onMounted } from 'vue';
-import { Search, Loading } from '@element-plus/icons-vue';
+import { Search, Loading, Upload } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus'
-import { TeamApi } from '@/api'
+import { TeamApi, FileApi } from '@/api'
+import type { UploadFile } from 'element-plus'
 
 interface Org {
   id?: number
@@ -172,6 +221,8 @@ const handleOrgJoined = (teamId: number) => {
 const createVisible = ref(false)
 const createLoading = ref(false)
 const createFormRef = ref()
+const uploadingLogo = ref(false)
+const uploadingBanner = ref(false)
 
 const createForm = reactive({
   name: '',
@@ -185,7 +236,88 @@ const createRules = {
 }
 
 const openCreateDialog = () => {
+  createForm.name = ''
+  createForm.banner = ''
+  createForm.logo = ''
+  createForm.description = ''
   createVisible.value = true
+}
+
+const handleLogoChange = async (file: UploadFile) => {
+  if (!file.raw) return
+
+  // 检查文件大小（限制为 10MB）
+  const maxSize = 10 * 1024 * 1024 // 10MB
+  if (file.raw.size > maxSize) {
+    ElMessage.error('Logo image size should not exceed 10MB')
+    return
+  }
+
+  // 检查文件类型
+  if (!file.raw.type.startsWith('image/')) {
+    ElMessage.error('Please upload an image file')
+    return
+  }
+
+  uploadingLogo.value = true
+  try {
+    const resp = await FileApi.uploadFile(file.raw)
+    const url = (resp.data as { url?: string }).url
+    if (url) {
+      createForm.logo = url
+      ElMessage.success('Logo uploaded successfully')
+    } else {
+      ElMessage.error('Failed to get logo URL')
+    }
+  } catch (e: unknown) {
+    console.error('Upload error:', e)
+    const err = e as { response?: { data?: { error?: string } }; message?: string }
+    const errorMsg = err?.response?.data?.error || err?.message || 'Failed to upload logo'
+    ElMessage.error(errorMsg)
+  } finally {
+    uploadingLogo.value = false
+  }
+}
+
+const handleBannerChange = async (file: UploadFile) => {
+  if (!file.raw) return
+
+  // 检查文件大小（限制为 10MB）
+  const maxSize = 10 * 1024 * 1024 // 10MB
+  if (file.raw.size > maxSize) {
+    ElMessage.error('Banner image size should not exceed 10MB')
+    return
+  }
+
+  // 检查文件类型
+  if (!file.raw.type.startsWith('image/')) {
+    ElMessage.error('Please upload an image file')
+    return
+  }
+
+  uploadingBanner.value = true
+  try {
+    const resp = await FileApi.uploadFile(file.raw)
+    const url = (resp.data as { url?: string }).url
+    if (url) {
+      createForm.banner = url
+      ElMessage.success('Banner uploaded successfully')
+    } else {
+      ElMessage.error('Failed to get banner URL')
+    }
+  } catch (e: unknown) {
+    console.error('Upload error:', e)
+    const err = e as { response?: { data?: { error?: string } }; message?: string }
+    const errorMsg = err?.response?.data?.error || err?.message || 'Failed to upload banner'
+    ElMessage.error(errorMsg)
+  } finally {
+    uploadingBanner.value = false
+  }
+}
+
+const handleImageError = (e: Event) => {
+  const img = e.target as HTMLImageElement
+  img.style.display = 'none'
 }
 
 const submitCreate = () => {
@@ -205,6 +337,11 @@ const submitCreate = () => {
       .then(() => {
         ElMessage.success('Create request submitted, waiting for approval')
         createVisible.value = false
+        // 重置表单
+        createForm.name = ''
+        createForm.banner = ''
+        createForm.logo = ''
+        createForm.description = ''
         fetchOrganizations(searchKeyword.value)
       })
       .catch((err: unknown) => {
