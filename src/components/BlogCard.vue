@@ -4,20 +4,20 @@
   >
     
     <!-- 图片展示区域 -->
-    <div v-if="tweet?.images && tweet.images.length > 0" class="w-full h-36 overflow-hidden relative">
+    <div v-if="tweet?.images && tweet.images.length > 0" class="w-full media-box-sm overflow-hidden relative">
       <!-- 多图片轮播 -->
       <el-carousel
         v-if="tweet.images.length > 1"
         :interval="0"
         indicator-position="outside"
-        height="144px"
-        class="blog-carousel"
+        height="100%"
+        class="blog-carousel h-full"
       >
         <el-carousel-item v-for="(image, index) in tweet.images" :key="index">
           <img
             :src="image"
             :alt="`Image ${index + 1}`"
-            class="w-full h-full object-cover"
+            class="w-full h-full object-contain bg-slate-100"
             @error="handleImageError"
           />
         </el-carousel-item>
@@ -27,7 +27,7 @@
         v-else
         :src="tweet.images[0]"
         alt="Blog cover"
-        class="w-full h-full object-cover"
+        class="w-full h-full object-contain bg-slate-100"
         @error="handleImageError"
       />
       <!-- 图片数量指示器 -->
@@ -35,7 +35,7 @@
         {{ tweet.images.length }} images
       </div>
     </div>
-    <div v-else class="w-full h-36 overflow-hidden bg-gradient-to-br from-indigo-100 to-purple-100"></div>
+    <div v-else class="w-full media-box-sm overflow-hidden bg-gradient-to-br from-indigo-100 to-purple-100"></div>
     
     <div class="px-4 pt-3 pb-1 flex items-center justify-between">
       <div class="flex-1 min-w-0">
@@ -197,5 +197,15 @@ const handleImageError = (e: Event) => {
   color: #ef4444;
   border-color: #fca5a5;
   background-color: #fef2f2;
+}
+
+.media-box-sm {
+  aspect-ratio: 16 / 9;
+  min-height: 200px;
+  max-height: 240px;
+}
+
+.blog-carousel :deep(.el-carousel__container) {
+  height: 100% !important;
 }
 </style>

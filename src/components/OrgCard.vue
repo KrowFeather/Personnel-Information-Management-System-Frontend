@@ -8,7 +8,7 @@
               mr-0.5em pos-absolute top-[-2em] left-3em b-2px b-solid b-black/10 bg-white">
         <img v-if="org.logo" :src="org.logo" :alt="org.name" class="w-full h-full object-contain" />
         <span v-else class="text-lg font-semibold text-[#4b5563]">
-          {{ org.name[0] }}
+          {{ org.name }}
         </span>
       </div>
       <div class="w-full h-full">
@@ -21,8 +21,8 @@
         </p>
       </div>
       <div>
-        <el-button 
-          type="primary" 
+        <el-button
+          type="primary"
           size="small"
           :loading="joining"
           :disabled="isJoined"
@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { TeamApi } from '@/api'
 
@@ -56,6 +56,9 @@ const props = defineProps<{
 const org = props.org
 const joining = ref(false)
 const isJoined = ref(props.isJoined || false)
+onMounted(() => {
+  console.log('org', org)
+})
 
 watch(() => props.isJoined, (newVal) => {
   isJoined.value = newVal || false
@@ -70,11 +73,11 @@ const handleJoin = async () => {
     ElMessage.warning('Organization ID is missing')
     return
   }
-  
+
   if (isJoined.value) {
     return
   }
-  
+
   joining.value = true
   try {
     await TeamApi.applyJoinTeam(org.id)

@@ -56,7 +56,7 @@
           <KnowledgeGraph :nodes="graphNodes" :links="graphLinks" />
         </div>
         <div class="w-full space-y-2">
-          <OrgCard v-for="(item,idx) in orgs" :key="idx" :org="item" />
+          <OrgCard v-for="(item,idx) in recommendedOrgs" :key="idx" :org="item" />
         </div>
       </div>
     </div>
@@ -209,11 +209,14 @@ interface TeamMember {
 }
 
 const orgs = ref<Org[]>([])
+const allTeams = ref<Org[]>([])
 const tweets = ref<Tweet[]>([])
 const members = ref<TeamMember[]>([])
 const loading = ref(false)
 const currentTeamId = ref<number | null>(null)
 const currentTeam = ref<Org | null>(null)
+const graphNodesData = ref<any[]>([])
+const graphLinksData = ref<any[]>([])
 
 // 获取当前用户信息
 const getUserInfo = () => {
@@ -269,6 +272,7 @@ const fetchTeamInfo = async () => {
   try {
     const teamListResp = await TeamApi.getTeamList(1)
     const teamList = (teamListResp.data as { teamList?: Org[] }).teamList || []
+    allTeams.value = teamList
     const foundTeam = teamList.find(t => t.name === orgName.value)
 
     if (!foundTeam || !foundTeam.id) {
@@ -319,9 +323,19 @@ const fetchTeamInfo = async () => {
       }
     }
 
-    // 获取推荐组织（排除当前组织）
+    // 获取知识图谱
     if (currentTeam.value?.id) {
-      orgs.value = teamList.filter(t => t.id !== currentTeam.value!.id).slice(0, 2)
+      try {
+        const graphResp = await TeamApi.getTeamGraph(currentTeam.value.id)
+        console.log('graphResp', graphResp)
+        const { nodes = [], links = [] } = (graphResp.data || {}) as { nodes?: any[]; links?: any[] }
+        graphNodesData.value = nodes
+        graphLinksData.value = links
+      } catch (e) {
+        console.error('Failed to load team graph', e)
+        graphNodesData.value = []
+        graphLinksData.value = []
+      }
     }
   } catch (e) {
     console.error(e)
@@ -473,40 +487,51 @@ const handleSubmitPost = async () => {
   })
 }
 
-const graphNodes = computed(() => {
-  const centerName = typeof orgName.value === 'string' ? orgName.value : 'Org'
-  const centerId = `org:${centerName}`
-  const baseNodes = [
-    { id: centerId, name: centerName, category: 'Org', symbolSize: 42 },
-    { id: 'members', name: 'Members', category: 'Entity' },
-    { id: 'projects', name: 'Projects', category: 'Entity' },
-    { id: 'roles', name: 'Roles', category: 'Entity' },
-    { id: 'docs', name: 'Docs', category: 'Entity' },
-  ]
-  const orgNodes = orgs.value.map((o) => ({
-    id: `org:${o.name}`,
-    name: o.name,
-    category: 'Related Org',
-  }))
-  return [...baseNodes, ...orgNodes]
+const recommendedOrgs = computed(() => {
+  // 优先使用图谱数据
+  if (graphNodesData.value.length) {
+    const relatedNodes = graphNodesData.value
+      .filter(n => n.category === 'Related Org' && typeof n.id === 'string' && n.id.startsWith('team:'))
+    console.log('relatedNodes', relatedNodes)
+
+    const ordered: Org[] = []
+    const seen = new Set<string | number | undefined>()
+    relatedNodes.forEach(n => {
+      const idPart = n.id.split(':')[1]
+      const tid = Number(idPart)
+      const matched = allTeams.value.find(t => t.id === tid) ||
+        allTeams.value.find(t => t.name?.toLowerCase() === (n.name || '').toLowerCase())
+      const org: Org = matched || {
+        id: isNaN(tid) ? undefined : tid,
+        name: n.name || idPart || 'Org',
+        description: '',
+      }
+      console.log('org', org)
+      const key = org.id ?? org.name
+      if (!seen.has(key)) {
+        seen.add(key)
+        ordered.push(org)
+      }
+    })
+    console.log('ordered', ordered)
+    console.log(currentTeam.value?.id)
+    const filtered = currentTeam.value?.id
+      ? ordered.filter(o => o.id !== currentTeam.value!.id)
+      : ordered
+    console.log('filtered', filtered)
+    console.log('filtered.length', filtered.length)
+    if (filtered.length) return filtered.slice(0, 6)
+  }
+
+  // 回退：用全量团队列表
+  if (currentTeam.value?.id) {
+    return allTeams.value.filter(t => t.id !== currentTeam.value!.id).slice(0, 4)
+  }
+  return allTeams.value.slice(0, 4)
 })
 
-const graphLinks = computed(() => {
-  const centerName = typeof orgName.value === 'string' ? orgName.value : 'Org'
-  const centerId = `org:${centerName}`
-  const baseLinks = [
-    { source: centerId, target: 'members', label: 'has' },
-    { source: centerId, target: 'projects', label: 'owns' },
-    { source: centerId, target: 'roles', label: 'defines' },
-    { source: centerId, target: 'docs', label: 'references' },
-  ]
-  const orgLinks = orgs.value.map((o) => ({
-    source: centerId,
-    target: `org:${o.name}`,
-    label: 'related',
-  }))
-  return [...baseLinks, ...orgLinks]
-})
+const graphNodes = computed(() => graphNodesData.value)
+const graphLinks = computed(() => graphLinksData.value)
 </script>
 
 <style scoped>

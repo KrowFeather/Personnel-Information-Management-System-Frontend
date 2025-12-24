@@ -105,4 +105,10 @@ export const getMyTeams = () => {
   return api.post<{ teamList: unknown[] }>('/team/get-my-teams')
 }
 
+export const getTeamGraph = (teamId: number) => {
+  return api.post<{ nodes: unknown[]; links: unknown[] }>('/team/graph', null, {
+    params: { teamId },
+  })
+}
+
 
