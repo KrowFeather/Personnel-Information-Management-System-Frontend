@@ -56,7 +56,13 @@
           <KnowledgeGraph :nodes="graphNodes" :links="graphLinks" />
         </div>
         <div class="w-full space-y-2">
-          <OrgCard v-for="(item,idx) in recommendedOrgs" :key="idx" :org="item" />
+          <OrgCard
+            v-for="(item,idx) in recommendedOrgs"
+            :key="idx"
+            :org="item"
+            :is-joined="joinedTeamIds.has(item.id!)"
+            @joined="handleOrgJoined"
+          />
         </div>
       </div>
     </div>
@@ -217,6 +223,7 @@ const currentTeamId = ref<number | null>(null)
 const currentTeam = ref<Org | null>(null)
 const graphNodesData = ref<any[]>([])
 const graphLinksData = ref<any[]>([])
+const joinedTeamIds = ref<Set<number>>(new Set())
 
 // 获取当前用户信息
 const getUserInfo = () => {
@@ -347,6 +354,7 @@ const fetchTeamInfo = async () => {
 
 onMounted(() => {
   fetchTeamInfo()
+  fetchJoinedTeams()
 })
 
 watch(orgName, () => {
@@ -487,6 +495,18 @@ const handleSubmitPost = async () => {
   })
 }
 
+// 随机打乱数组
+const shuffleArray = <T>(array: T[]): T[] => {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const temp = shuffled[i]
+    shuffled[i] = shuffled[j]!
+    shuffled[j] = temp!
+  }
+  return shuffled
+}
+
 const recommendedOrgs = computed(() => {
   // 优先使用图谱数据
   if (graphNodesData.value.length) {
@@ -520,18 +540,39 @@ const recommendedOrgs = computed(() => {
       : ordered
     console.log('filtered', filtered)
     console.log('filtered.length', filtered.length)
-    if (filtered.length) return filtered.slice(0, 6)
+    // 先随机打乱，再取前 6 个
+    const shuffled = shuffleArray(filtered)
+    const filtered_sliced = shuffled.slice(0, 6)
+    if (filtered_sliced.length) return filtered_sliced
   }
 
-  // 回退：用全量团队列表
-  if (currentTeam.value?.id) {
-    return allTeams.value.filter(t => t.id !== currentTeam.value!.id).slice(0, 4)
-  }
-  return allTeams.value.slice(0, 4)
+  return null
+
+  // // 回退：用全量团队列表
+  // if (currentTeam.value?.id) {
+  //   return allTeams.value.filter(t => t.id !== currentTeam.value!.id).slice(0, 4)
+  // }
+  // return allTeams.value.slice(0, 4)
 })
 
 const graphNodes = computed(() => graphNodesData.value)
 const graphLinks = computed(() => graphLinksData.value)
+
+// 获取用户已加入的组织列表
+const fetchJoinedTeams = async () => {
+  try {
+    const resp = await TeamApi.getMyTeams()
+    const list = (resp.data as { teamList?: Org[] }).teamList || []
+    joinedTeamIds.value = new Set(list.filter(t => t.id).map(t => t.id!))
+  } catch (e) {
+    console.error('Failed to load joined teams', e)
+  }
+}
+
+// 处理组织加入事件
+const handleOrgJoined = (teamId: number) => {
+  joinedTeamIds.value.add(teamId)
+}
 </script>
 
 <style scoped>
